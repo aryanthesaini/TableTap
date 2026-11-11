@@ -1,0 +1,3740 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "TableTap API",
+        "description": "Multi-tenant restaurant QR ordering platform.\n\n* `/api/v1/public/**` \u2014 customer storefront & checkout (no auth, scoped by table QR token)\n* `/api/v1/restaurant/**` \u2014 restaurant dashboard (JWT, OWNER/STAFF, tenant from token)\n* `/api/v1/admin/**` \u2014 platform admin (JWT, PLATFORM_ADMIN)\n* `/api/v1/webhooks/**` \u2014 payment provider callbacks (signature-verified)\n\nObtain a token via `POST /api/v1/auth/login` (demo password: `demo1234`).\n",
+        "version": "v1"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8080",
+            "description": "Generated server url"
+        }
+    ],
+    "paths": {
+        "/api/v1/restaurant/tables/{tableId}": {
+            "put": {
+                "tags": [
+                    "Tables & QR codes"
+                ],
+                "summary": "Rename a table / change seats",
+                "operationId": "update",
+                "parameters": [
+                    {
+                        "name": "tableId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TableRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TableResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Tables & QR codes"
+                ],
+                "summary": "Remove a table (soft delete; order history is kept)",
+                "operationId": "delete",
+                "parameters": [
+                    {
+                        "name": "tableId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/profile": {
+            "get": {
+                "tags": [
+                    "Restaurant profile"
+                ],
+                "summary": "Get the signed-in user's restaurant",
+                "operationId": "get",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RestaurantResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Restaurant profile"
+                ],
+                "summary": "Update restaurant details (owner only)",
+                "operationId": "update_1",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateRestaurantRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RestaurantResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/payments/configuration": {
+            "get": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Merchant account (Razorpay) connection \u2014 secrets are never returned",
+                "operationId": "configuration",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentConfigurationResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Connect / update the restaurant's own merchant account",
+                "operationId": "updateConfiguration",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdatePaymentConfigurationRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentConfigurationResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/menu/items/{itemId}": {
+            "put": {
+                "tags": [
+                    "Menu management"
+                ],
+                "summary": "Edit a menu item (name, price, category, image, \u2026)",
+                "operationId": "updateItem",
+                "parameters": [
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MenuItemRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MenuItemResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Menu management"
+                ],
+                "summary": "Delete a menu item (soft delete)",
+                "operationId": "deleteItem",
+                "parameters": [
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/menu/categories/{categoryId}": {
+            "put": {
+                "tags": [
+                    "Menu management"
+                ],
+                "summary": "Rename / describe a category",
+                "operationId": "updateCategory",
+                "parameters": [
+                    {
+                        "name": "categoryId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CategoryRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CategoryResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Menu management"
+                ],
+                "summary": "Delete a category and its items (soft delete)",
+                "operationId": "deleteCategory",
+                "parameters": [
+                    {
+                        "name": "categoryId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/menu/categories/{categoryId}/items/order": {
+            "put": {
+                "tags": [
+                    "Menu management"
+                ],
+                "summary": "Reorder items within a category",
+                "operationId": "reorderItems",
+                "parameters": [
+                    {
+                        "name": "categoryId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReorderRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/menu/categories/order": {
+            "put": {
+                "tags": [
+                    "Menu management"
+                ],
+                "summary": "Reorder categories",
+                "operationId": "reorderCategories",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReorderRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/menu-imports/{uploadId}/items/{itemId}": {
+            "put": {
+                "tags": [
+                    "AI menu onboarding"
+                ],
+                "summary": "Edit a draft item (marks it reviewed)",
+                "operationId": "updateItem_1",
+                "parameters": [
+                    {
+                        "name": "uploadId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DraftItemRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DraftItemResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "AI menu onboarding"
+                ],
+                "summary": "Remove a draft item",
+                "operationId": "deleteItem_1",
+                "parameters": [
+                    {
+                        "name": "uploadId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/webhooks/payments/{provider}/{restaurantId}": {
+            "post": {
+                "tags": [
+                    "Payment webhooks"
+                ],
+                "summary": "Receive a payment event (HMAC-SHA256 of the raw body in X-Razorpay-Signature)",
+                "operationId": "receive",
+                "parameters": [
+                    {
+                        "name": "provider",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "restaurantId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "X-Razorpay-Signature",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/v1/restaurant/tables": {
+            "get": {
+                "tags": [
+                    "Tables & QR codes"
+                ],
+                "summary": "List tables with their QR ordering URLs",
+                "operationId": "list",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/TableResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Tables & QR codes"
+                ],
+                "summary": "Create a table (a QR token is generated automatically)",
+                "operationId": "create",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TableRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TableResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/tables/{tableId}/qr/regenerate": {
+            "post": {
+                "tags": [
+                    "Tables & QR codes"
+                ],
+                "summary": "Regenerate the table's QR code (old printed codes stop working)",
+                "operationId": "regenerateQr",
+                "parameters": [
+                    {
+                        "name": "tableId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TableResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/orders/{orderId}/serve": {
+            "post": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Mark an order as served (idempotent)",
+                "operationId": "markServed",
+                "parameters": [
+                    {
+                        "name": "orderId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/menu/items": {
+            "post": {
+                "tags": [
+                    "Menu management"
+                ],
+                "summary": "Add a menu item",
+                "operationId": "createItem",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MenuItemRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MenuItemResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/menu/images": {
+            "post": {
+                "tags": [
+                    "Menu management"
+                ],
+                "summary": "Upload a food image; returns its URL to use in an item",
+                "operationId": "uploadImage",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "file"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ImageUploadResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/menu/categories": {
+            "post": {
+                "tags": [
+                    "Menu management"
+                ],
+                "summary": "Create a category",
+                "operationId": "createCategory",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CategoryRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CategoryResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/menu-imports": {
+            "get": {
+                "tags": [
+                    "AI menu onboarding"
+                ],
+                "summary": "Recent uploads",
+                "operationId": "list_3",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/MenuUploadResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "AI menu onboarding"
+                ],
+                "summary": "Upload a menu (PDF or image); extraction runs in the background",
+                "operationId": "upload",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "file"
+                                ],
+                                "type": "object",
+                                "properties": {
+                                    "file": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MenuUploadResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/menu-imports/{uploadId}/publish": {
+            "post": {
+                "tags": [
+                    "AI menu onboarding"
+                ],
+                "summary": "Approve and publish included items to the live menu",
+                "operationId": "publish",
+                "parameters": [
+                    {
+                        "name": "uploadId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PublishResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/menu-imports/{uploadId}/items": {
+            "post": {
+                "tags": [
+                    "AI menu onboarding"
+                ],
+                "summary": "Add an item the extractor missed",
+                "operationId": "addItem",
+                "parameters": [
+                    {
+                        "name": "uploadId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DraftItemRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DraftItemResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/menu-imports/{uploadId}/discard": {
+            "post": {
+                "tags": [
+                    "AI menu onboarding"
+                ],
+                "summary": "Discard this upload",
+                "operationId": "discard",
+                "parameters": [
+                    {
+                        "name": "uploadId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/public/mock-gateway/orders/{providerOrderId}/pay": {
+            "post": {
+                "tags": [
+                    "Mock payment gateway"
+                ],
+                "summary": "Simulate the customer completing (or failing) payment in the provider checkout",
+                "operationId": "pay",
+                "parameters": [
+                    {
+                        "name": "providerOrderId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SimulateRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SimulateResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/public/checkout": {
+            "post": {
+                "tags": [
+                    "Customer ordering (public)"
+                ],
+                "summary": "Start checkout: prices the cart server-side and opens a payment",
+                "operationId": "startCheckout",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StartCheckoutRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CheckoutResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/public/checkout/{checkoutId}/sync": {
+            "post": {
+                "tags": [
+                    "Customer ordering (public)"
+                ],
+                "summary": "Re-check payment status with the provider (after a timeout)",
+                "operationId": "sync",
+                "parameters": [
+                    {
+                        "name": "checkoutId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CheckoutStatusResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/public/checkout/{checkoutId}/confirm": {
+            "post": {
+                "tags": [
+                    "Customer ordering (public)"
+                ],
+                "summary": "Submit the provider checkout result for server-side verification",
+                "operationId": "confirm",
+                "parameters": [
+                    {
+                        "name": "checkoutId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ClientPaymentConfirmation"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CheckoutStatusResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Sign in with email and password",
+                "description": "Returns a bearer token. Demo password: demo1234",
+                "operationId": "login",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoginResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/restaurant/tables/{tableId}/status": {
+            "patch": {
+                "tags": [
+                    "Tables & QR codes"
+                ],
+                "summary": "Activate or deactivate a table",
+                "operationId": "setStatus",
+                "parameters": [
+                    {
+                        "name": "tableId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TableStatusRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TableResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/profile/operating-status": {
+            "patch": {
+                "tags": [
+                    "Restaurant profile"
+                ],
+                "summary": "Open or pause online ordering (owner only)",
+                "operationId": "setOperatingStatus",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateOperatingStatusRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RestaurantResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/menu/items/{itemId}/availability": {
+            "patch": {
+                "tags": [
+                    "Menu management"
+                ],
+                "summary": "Mark an item available / sold out (owner and staff)",
+                "operationId": "setAvailability",
+                "parameters": [
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AvailabilityRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MenuItemResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/restaurants/{restaurantId}/status": {
+            "patch": {
+                "tags": [
+                    "Platform admin"
+                ],
+                "summary": "Activate or suspend a restaurant",
+                "operationId": "updateStatus",
+                "parameters": [
+                    {
+                        "name": "restaurantId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateRestaurantStatusRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RestaurantResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/payments": {
+            "get": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Payment transactions (newest first)",
+                "operationId": "list_1",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "CREATED",
+                                "PENDING",
+                                "CAPTURED",
+                                "FAILED",
+                                "REFUNDED"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 25
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PageResponsePaymentView"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/payments/summary": {
+            "get": {
+                "tags": [
+                    "Payments"
+                ],
+                "summary": "Payment totals over the last N days",
+                "operationId": "summary",
+                "parameters": [
+                    {
+                        "name": "days",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 7
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaymentSummary"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/orders": {
+            "get": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Search orders",
+                "description": "PENDING orders are returned oldest-first; others newest-first. `q` matches order number, table name or item name.",
+                "operationId": "list_2",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "PENDING",
+                                "SERVED"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "tableId",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32",
+                            "default": 25
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PageResponseOrderResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/orders/{orderId}": {
+            "get": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Order details",
+                "operationId": "get_1",
+                "parameters": [
+                    {
+                        "name": "orderId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/orders/table-activity": {
+            "get": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Per-table activity (pending orders, today's orders and revenue)",
+                "operationId": "tableActivity",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/TableActivityResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/orders/counts": {
+            "get": {
+                "tags": [
+                    "Orders"
+                ],
+                "summary": "Pending / served-today counts for tabs and badges",
+                "operationId": "counts",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrderCountsResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/menu": {
+            "get": {
+                "tags": [
+                    "Menu management"
+                ],
+                "summary": "Full menu with categories and items",
+                "operationId": "getMenu",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MenuResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/menu-imports/{uploadId}": {
+            "get": {
+                "tags": [
+                    "AI menu onboarding"
+                ],
+                "summary": "Upload with extracted draft items",
+                "operationId": "get_2",
+                "parameters": [
+                    {
+                        "name": "uploadId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MenuUploadResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/restaurant/analytics/overview": {
+            "get": {
+                "tags": [
+                    "Analytics"
+                ],
+                "summary": "Dashboard overview: today's KPIs, hourly and 7-day trends, top items",
+                "operationId": "overview",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RestaurantOverviewResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/public/storefront/{restaurantSlug}/tables/{tableToken}": {
+            "get": {
+                "tags": [
+                    "Customer ordering (public)"
+                ],
+                "summary": "Restaurant branding, table and menu for a scanned QR code",
+                "operationId": "storefront",
+                "parameters": [
+                    {
+                        "name": "restaurantSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "tableToken",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StorefrontResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/public/orders/{orderId}": {
+            "get": {
+                "tags": [
+                    "Customer ordering (public)"
+                ],
+                "summary": "Order confirmation / tracking for the customer",
+                "operationId": "order",
+                "parameters": [
+                    {
+                        "name": "orderId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CustomerOrderResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/public/checkout/{checkoutId}": {
+            "get": {
+                "tags": [
+                    "Customer ordering (public)"
+                ],
+                "summary": "Checkout / payment / order status",
+                "operationId": "checkoutStatus",
+                "parameters": [
+                    {
+                        "name": "checkoutId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CheckoutStatusResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/me": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Current signed-in user",
+                "operationId": "me",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/auth/demo-accounts": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Demo accounts for the login screen (empty unless demo mode is enabled)",
+                "operationId": "demoAccounts",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/DemoAccountResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/restaurants": {
+            "get": {
+                "tags": [
+                    "Platform admin"
+                ],
+                "summary": "All restaurants with key stats",
+                "operationId": "restaurants",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/AdminRestaurantResponse"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/restaurants/{restaurantId}": {
+            "get": {
+                "tags": [
+                    "Platform admin"
+                ],
+                "summary": "Restaurant details, stats and team members",
+                "operationId": "restaurant",
+                "parameters": [
+                    {
+                        "name": "restaurantId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AdminRestaurantResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/overview": {
+            "get": {
+                "tags": [
+                    "Platform admin"
+                ],
+                "summary": "Platform-wide statistics",
+                "operationId": "overview_1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlatformOverviewResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "TableRequest": {
+                "required": [
+                    "name"
+                ],
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "maxLength": 60,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "seats": {
+                        "maximum": 50,
+                        "minimum": 1,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "TableResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "seats": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "active": {
+                        "type": "boolean"
+                    },
+                    "qrToken": {
+                        "type": "string"
+                    },
+                    "orderingUrl": {
+                        "type": "string"
+                    },
+                    "qrGeneratedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "sortOrder": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "UpdateRestaurantRequest": {
+                "required": [
+                    "brandColor",
+                    "name",
+                    "taxLabel",
+                    "taxRatePercent"
+                ],
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "maxLength": 120,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "description": {
+                        "maxLength": 500,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "cuisine": {
+                        "maxLength": 120,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "logoUrl": {
+                        "maxLength": 500,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "brandColor": {
+                        "pattern": "^#[0-9A-Fa-f]{6}$",
+                        "type": "string"
+                    },
+                    "addressLine": {
+                        "maxLength": 255,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "city": {
+                        "maxLength": 80,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "state": {
+                        "maxLength": 80,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "postalCode": {
+                        "maxLength": 12,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "phone": {
+                        "maxLength": 20,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "email": {
+                        "maxLength": 160,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "taxLabel": {
+                        "maxLength": 20,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "taxRatePercent": {
+                        "maximum": 100.0,
+                        "exclusiveMaximum": false,
+                        "minimum": 0.0,
+                        "exclusiveMinimum": false,
+                        "type": "number"
+                    }
+                }
+            },
+            "RestaurantResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "slug": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "cuisine": {
+                        "type": "string"
+                    },
+                    "logoUrl": {
+                        "type": "string"
+                    },
+                    "coverImageUrl": {
+                        "type": "string"
+                    },
+                    "brandColor": {
+                        "type": "string"
+                    },
+                    "addressLine": {
+                        "type": "string"
+                    },
+                    "city": {
+                        "type": "string"
+                    },
+                    "state": {
+                        "type": "string"
+                    },
+                    "postalCode": {
+                        "type": "string"
+                    },
+                    "phone": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "ACTIVE",
+                            "SUSPENDED"
+                        ]
+                    },
+                    "acceptingOrders": {
+                        "type": "boolean"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "taxLabel": {
+                        "type": "string"
+                    },
+                    "taxRatePercent": {
+                        "type": "number"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "UpdatePaymentConfigurationRequest": {
+                "required": [
+                    "keyId",
+                    "mode"
+                ],
+                "type": "object",
+                "properties": {
+                    "mode": {
+                        "type": "string",
+                        "enum": [
+                            "TEST",
+                            "LIVE"
+                        ]
+                    },
+                    "keyId": {
+                        "maxLength": 80,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "keySecret": {
+                        "maxLength": 200,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "webhookSecret": {
+                        "maxLength": 200,
+                        "minLength": 0,
+                        "type": "string"
+                    }
+                }
+            },
+            "PaymentConfigurationResponse": {
+                "type": "object",
+                "properties": {
+                    "provider": {
+                        "type": "string"
+                    },
+                    "mode": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "keyId": {
+                        "type": "string"
+                    },
+                    "keySecretSet": {
+                        "type": "boolean"
+                    },
+                    "webhookSecretSet": {
+                        "type": "boolean"
+                    },
+                    "webhookUrl": {
+                        "type": "string"
+                    },
+                    "connectedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "MenuItemRequest": {
+                "required": [
+                    "categoryId",
+                    "name",
+                    "price"
+                ],
+                "type": "object",
+                "properties": {
+                    "categoryId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "maxLength": 120,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "description": {
+                        "maxLength": 500,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "price": {
+                        "maximum": 999999.99,
+                        "exclusiveMaximum": false,
+                        "minimum": 0.0,
+                        "exclusiveMinimum": false,
+                        "type": "number"
+                    },
+                    "imageUrl": {
+                        "maxLength": 500,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "available": {
+                        "type": "boolean"
+                    },
+                    "dietary": {
+                        "type": "string",
+                        "enum": [
+                            "VEG",
+                            "NON_VEG",
+                            "EGG"
+                        ]
+                    },
+                    "featured": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "MenuItemResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "categoryId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "price": {
+                        "type": "number"
+                    },
+                    "imageUrl": {
+                        "type": "string"
+                    },
+                    "available": {
+                        "type": "boolean"
+                    },
+                    "dietary": {
+                        "type": "string",
+                        "enum": [
+                            "VEG",
+                            "NON_VEG",
+                            "EGG"
+                        ]
+                    },
+                    "featured": {
+                        "type": "boolean"
+                    },
+                    "sortOrder": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "CategoryRequest": {
+                "required": [
+                    "name"
+                ],
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "maxLength": 80,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "description": {
+                        "maxLength": 300,
+                        "minLength": 0,
+                        "type": "string"
+                    }
+                }
+            },
+            "CategoryResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "sortOrder": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MenuItemResponse"
+                        }
+                    }
+                }
+            },
+            "ReorderRequest": {
+                "required": [
+                    "orderedIds"
+                ],
+                "type": "object",
+                "properties": {
+                    "orderedIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                }
+            },
+            "DraftItemRequest": {
+                "required": [
+                    "categoryName",
+                    "included",
+                    "name"
+                ],
+                "type": "object",
+                "properties": {
+                    "categoryName": {
+                        "maxLength": 80,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "name": {
+                        "maxLength": 120,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "description": {
+                        "maxLength": 500,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "price": {
+                        "maximum": 999999.99,
+                        "exclusiveMaximum": false,
+                        "minimum": 0.0,
+                        "exclusiveMinimum": false,
+                        "type": "number"
+                    },
+                    "dietary": {
+                        "type": "string",
+                        "enum": [
+                            "VEG",
+                            "NON_VEG",
+                            "EGG"
+                        ]
+                    },
+                    "included": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "DraftItemResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "categoryName": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "price": {
+                        "type": "number"
+                    },
+                    "dietary": {
+                        "type": "string",
+                        "enum": [
+                            "VEG",
+                            "NON_VEG",
+                            "EGG"
+                        ]
+                    },
+                    "confidence": {
+                        "type": "number"
+                    },
+                    "uncertainFields": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "included": {
+                        "type": "boolean"
+                    },
+                    "sortOrder": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "OrderItemResponse": {
+                "type": "object",
+                "properties": {
+                    "menuItemId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "unitPrice": {
+                        "type": "number"
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "lineTotal": {
+                        "type": "number"
+                    },
+                    "dietary": {
+                        "type": "string"
+                    }
+                }
+            },
+            "OrderResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "orderNumber": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "tableId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "tableName": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "PENDING",
+                            "SERVED"
+                        ]
+                    },
+                    "paymentStatus": {
+                        "type": "string",
+                        "enum": [
+                            "CREATED",
+                            "PENDING",
+                            "CAPTURED",
+                            "FAILED",
+                            "REFUNDED"
+                        ]
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "subtotal": {
+                        "type": "number"
+                    },
+                    "taxAmount": {
+                        "type": "number"
+                    },
+                    "totalAmount": {
+                        "type": "number"
+                    },
+                    "customerNote": {
+                        "type": "string"
+                    },
+                    "itemCount": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItemResponse"
+                        }
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "servedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "ImageUploadResponse": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string"
+                    }
+                }
+            },
+            "MenuUploadResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "originalFilename": {
+                        "type": "string"
+                    },
+                    "contentType": {
+                        "type": "string"
+                    },
+                    "fileSize": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "fileUrl": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "PROCESSING",
+                            "READY_FOR_REVIEW",
+                            "PUBLISHED",
+                            "DISCARDED",
+                            "FAILED"
+                        ]
+                    },
+                    "extractionProvider": {
+                        "type": "string"
+                    },
+                    "errorMessage": {
+                        "type": "string"
+                    },
+                    "itemCount": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "uncertainCount": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "publishedItemCount": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "publishedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DraftItemResponse"
+                        }
+                    }
+                }
+            },
+            "PublishResponse": {
+                "type": "object",
+                "properties": {
+                    "itemsCreated": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "categoriesCreated": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "SimulateRequest": {
+                "required": [
+                    "outcome"
+                ],
+                "type": "object",
+                "properties": {
+                    "outcome": {
+                        "type": "string",
+                        "enum": [
+                            "SUCCESS",
+                            "FAILURE",
+                            "TIMEOUT"
+                        ]
+                    },
+                    "method": {
+                        "pattern": "UPI|CARD|NETBANKING|WALLET",
+                        "type": "string"
+                    }
+                }
+            },
+            "SimulateResponse": {
+                "type": "object",
+                "properties": {
+                    "outcome": {
+                        "type": "string"
+                    },
+                    "providerOrderId": {
+                        "type": "string"
+                    },
+                    "providerPaymentId": {
+                        "type": "string"
+                    },
+                    "signature": {
+                        "type": "string"
+                    },
+                    "errorDescription": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CartLine": {
+                "required": [
+                    "menuItemId"
+                ],
+                "type": "object",
+                "properties": {
+                    "menuItemId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "quantity": {
+                        "maximum": 20,
+                        "minimum": 1,
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "StartCheckoutRequest": {
+                "required": [
+                    "items",
+                    "restaurantSlug",
+                    "tableToken"
+                ],
+                "type": "object",
+                "properties": {
+                    "restaurantSlug": {
+                        "maxLength": 80,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "tableToken": {
+                        "maxLength": 32,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "items": {
+                        "maxItems": 50,
+                        "minItems": 0,
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CartLine"
+                        }
+                    },
+                    "note": {
+                        "maxLength": 300,
+                        "minLength": 0,
+                        "type": "string"
+                    }
+                }
+            },
+            "CheckoutLine": {
+                "type": "object",
+                "properties": {
+                    "menuItemId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "unitPrice": {
+                        "type": "number"
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "lineTotal": {
+                        "type": "number"
+                    },
+                    "dietary": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CheckoutResponse": {
+                "type": "object",
+                "properties": {
+                    "checkoutId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "OPEN",
+                            "COMPLETED",
+                            "FAILED",
+                            "EXPIRED"
+                        ]
+                    },
+                    "restaurantName": {
+                        "type": "string"
+                    },
+                    "tableName": {
+                        "type": "string"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CheckoutLine"
+                        }
+                    },
+                    "subtotal": {
+                        "type": "number"
+                    },
+                    "taxLabel": {
+                        "type": "string"
+                    },
+                    "taxRatePercent": {
+                        "type": "number"
+                    },
+                    "taxAmount": {
+                        "type": "number"
+                    },
+                    "totalAmount": {
+                        "type": "number"
+                    },
+                    "payment": {
+                        "$ref": "#/components/schemas/PaymentInitiation"
+                    }
+                }
+            },
+            "PaymentInitiation": {
+                "type": "object",
+                "properties": {
+                    "paymentId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "provider": {
+                        "type": "string"
+                    },
+                    "keyId": {
+                        "type": "string"
+                    },
+                    "providerOrderId": {
+                        "type": "string"
+                    },
+                    "amount": {
+                        "type": "number"
+                    },
+                    "amountMinor": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "currency": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CheckoutStatusResponse": {
+                "type": "object",
+                "properties": {
+                    "checkoutId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "OPEN",
+                            "COMPLETED",
+                            "FAILED",
+                            "EXPIRED"
+                        ]
+                    },
+                    "paymentStatus": {
+                        "type": "string",
+                        "enum": [
+                            "CREATED",
+                            "PENDING",
+                            "CAPTURED",
+                            "FAILED",
+                            "REFUNDED"
+                        ]
+                    },
+                    "failureReason": {
+                        "type": "string"
+                    },
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "orderNumber": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "ClientPaymentConfirmation": {
+                "required": [
+                    "providerOrderId",
+                    "providerPaymentId",
+                    "signature"
+                ],
+                "type": "object",
+                "properties": {
+                    "providerOrderId": {
+                        "maxLength": 64,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "providerPaymentId": {
+                        "maxLength": 64,
+                        "minLength": 0,
+                        "type": "string"
+                    },
+                    "signature": {
+                        "maxLength": 128,
+                        "minLength": 0,
+                        "type": "string"
+                    }
+                }
+            },
+            "LoginRequest": {
+                "required": [
+                    "email",
+                    "password"
+                ],
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string"
+                    },
+                    "password": {
+                        "type": "string"
+                    }
+                }
+            },
+            "LoginResponse": {
+                "type": "object",
+                "properties": {
+                    "accessToken": {
+                        "type": "string"
+                    },
+                    "tokenType": {
+                        "type": "string"
+                    },
+                    "expiresAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/UserResponse"
+                    }
+                }
+            },
+            "UserResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "fullName": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "OWNER",
+                            "STAFF",
+                            "PLATFORM_ADMIN"
+                        ]
+                    },
+                    "restaurantId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "restaurantName": {
+                        "type": "string"
+                    },
+                    "restaurantSlug": {
+                        "type": "string"
+                    },
+                    "lastLoginAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "TableStatusRequest": {
+                "required": [
+                    "active"
+                ],
+                "type": "object",
+                "properties": {
+                    "active": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "UpdateOperatingStatusRequest": {
+                "required": [
+                    "acceptingOrders"
+                ],
+                "type": "object",
+                "properties": {
+                    "acceptingOrders": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "AvailabilityRequest": {
+                "required": [
+                    "available"
+                ],
+                "type": "object",
+                "properties": {
+                    "available": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "UpdateRestaurantStatusRequest": {
+                "required": [
+                    "status"
+                ],
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "ACTIVE",
+                            "SUSPENDED"
+                        ]
+                    }
+                }
+            },
+            "PageResponsePaymentView": {
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PaymentView"
+                        }
+                    },
+                    "page": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "totalElements": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "totalPages": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "PaymentView": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "checkoutSessionId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "orderId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "orderNumber": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "provider": {
+                        "type": "string"
+                    },
+                    "providerOrderId": {
+                        "type": "string"
+                    },
+                    "providerPaymentId": {
+                        "type": "string"
+                    },
+                    "amount": {
+                        "type": "number"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "CREATED",
+                            "PENDING",
+                            "CAPTURED",
+                            "FAILED",
+                            "REFUNDED"
+                        ]
+                    },
+                    "method": {
+                        "type": "string"
+                    },
+                    "failureReason": {
+                        "type": "string"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "capturedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "PaymentSummary": {
+                "type": "object",
+                "properties": {
+                    "days": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "capturedCount": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "capturedAmount": {
+                        "type": "number"
+                    },
+                    "failedCount": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "pendingCount": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "successRate": {
+                        "type": "number",
+                        "format": "double"
+                    }
+                }
+            },
+            "PageResponseOrderResponse": {
+                "type": "object",
+                "properties": {
+                    "content": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderResponse"
+                        }
+                    },
+                    "page": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "totalElements": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "totalPages": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "TableActivityResponse": {
+                "type": "object",
+                "properties": {
+                    "tableId": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "pendingOrders": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "ordersToday": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "revenueToday": {
+                        "type": "number"
+                    },
+                    "lastOrderAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "OrderCountsResponse": {
+                "type": "object",
+                "properties": {
+                    "pending": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "servedToday": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "ordersToday": {
+                        "type": "integer",
+                        "format": "int64"
+                    }
+                }
+            },
+            "MenuResponse": {
+                "type": "object",
+                "properties": {
+                    "categories": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CategoryResponse"
+                        }
+                    },
+                    "totalItems": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "unavailableItems": {
+                        "type": "integer",
+                        "format": "int32"
+                    }
+                }
+            },
+            "DailyPoint": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "orders": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "revenue": {
+                        "type": "number"
+                    }
+                }
+            },
+            "HourlyPoint": {
+                "type": "object",
+                "properties": {
+                    "hour": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "orders": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "revenue": {
+                        "type": "number"
+                    }
+                }
+            },
+            "RestaurantOverviewResponse": {
+                "type": "object",
+                "properties": {
+                    "currency": {
+                        "type": "string"
+                    },
+                    "today": {
+                        "$ref": "#/components/schemas/Today"
+                    },
+                    "hourly": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/HourlyPoint"
+                        }
+                    },
+                    "last7Days": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DailyPoint"
+                        }
+                    },
+                    "topItems": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/TopItem"
+                        }
+                    }
+                }
+            },
+            "Today": {
+                "type": "object",
+                "properties": {
+                    "orders": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "revenue": {
+                        "type": "number"
+                    },
+                    "pendingOrders": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "servedOrders": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "averageOrderValue": {
+                        "type": "number"
+                    },
+                    "ordersYesterdaySameTime": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "revenueYesterdaySameTime": {
+                        "type": "number"
+                    }
+                }
+            },
+            "TopItem": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "quantity": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "revenue": {
+                        "type": "number"
+                    }
+                }
+            },
+            "Category": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Item"
+                        }
+                    }
+                }
+            },
+            "Item": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "price": {
+                        "type": "number"
+                    },
+                    "imageUrl": {
+                        "type": "string"
+                    },
+                    "available": {
+                        "type": "boolean"
+                    },
+                    "dietary": {
+                        "type": "string",
+                        "enum": [
+                            "VEG",
+                            "NON_VEG",
+                            "EGG"
+                        ]
+                    },
+                    "featured": {
+                        "type": "boolean"
+                    }
+                }
+            },
+            "Restaurant": {
+                "type": "object",
+                "properties": {
+                    "slug": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "cuisine": {
+                        "type": "string"
+                    },
+                    "logoUrl": {
+                        "type": "string"
+                    },
+                    "coverImageUrl": {
+                        "type": "string"
+                    },
+                    "brandColor": {
+                        "type": "string"
+                    },
+                    "addressLine": {
+                        "type": "string"
+                    },
+                    "city": {
+                        "type": "string"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "taxLabel": {
+                        "type": "string"
+                    },
+                    "taxRatePercent": {
+                        "type": "number"
+                    }
+                }
+            },
+            "StorefrontResponse": {
+                "type": "object",
+                "properties": {
+                    "restaurant": {
+                        "$ref": "#/components/schemas/Restaurant"
+                    },
+                    "table": {
+                        "$ref": "#/components/schemas/Table"
+                    },
+                    "orderingEnabled": {
+                        "type": "boolean"
+                    },
+                    "orderingDisabledReason": {
+                        "type": "string"
+                    },
+                    "categories": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Category"
+                        }
+                    }
+                }
+            },
+            "Table": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "token": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CustomerOrderResponse": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid"
+                    },
+                    "orderNumber": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "PENDING",
+                            "SERVED"
+                        ]
+                    },
+                    "paymentStatus": {
+                        "type": "string",
+                        "enum": [
+                            "CREATED",
+                            "PENDING",
+                            "CAPTURED",
+                            "FAILED",
+                            "REFUNDED"
+                        ]
+                    },
+                    "restaurantName": {
+                        "type": "string"
+                    },
+                    "restaurantSlug": {
+                        "type": "string"
+                    },
+                    "brandColor": {
+                        "type": "string"
+                    },
+                    "tableName": {
+                        "type": "string"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderItemResponse"
+                        }
+                    },
+                    "subtotal": {
+                        "type": "number"
+                    },
+                    "taxLabel": {
+                        "type": "string"
+                    },
+                    "taxAmount": {
+                        "type": "number"
+                    },
+                    "totalAmount": {
+                        "type": "number"
+                    },
+                    "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "servedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "DemoAccountResponse": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string"
+                    },
+                    "password": {
+                        "type": "string"
+                    },
+                    "fullName": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string",
+                        "enum": [
+                            "OWNER",
+                            "STAFF",
+                            "PLATFORM_ADMIN"
+                        ]
+                    },
+                    "restaurantName": {
+                        "type": "string"
+                    },
+                    "restaurantSlug": {
+                        "type": "string"
+                    }
+                }
+            },
+            "AdminRestaurantResponse": {
+                "type": "object",
+                "properties": {
+                    "restaurant": {
+                        "$ref": "#/components/schemas/RestaurantResponse"
+                    },
+                    "stats": {
+                        "$ref": "#/components/schemas/Stats"
+                    },
+                    "paymentStatus": {
+                        "type": "string"
+                    },
+                    "paymentMode": {
+                        "type": "string"
+                    },
+                    "members": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Member"
+                        }
+                    }
+                }
+            },
+            "Member": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string"
+                    },
+                    "fullName": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string"
+                    },
+                    "lastLoginAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "Stats": {
+                "type": "object",
+                "properties": {
+                    "ordersToday": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "revenueToday": {
+                        "type": "number"
+                    },
+                    "orders7d": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "revenue7d": {
+                        "type": "number"
+                    },
+                    "ordersAllTime": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "revenueAllTime": {
+                        "type": "number"
+                    },
+                    "pendingOrders": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "activeTables": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "menuItems": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "lastOrderAt": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                }
+            },
+            "PlatformOverviewResponse": {
+                "type": "object",
+                "properties": {
+                    "restaurants": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "activeRestaurants": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "suspendedRestaurants": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "ordersToday": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "gmvToday": {
+                        "type": "number"
+                    },
+                    "orders7d": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "gmv7d": {
+                        "type": "number"
+                    },
+                    "last7Days": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RestaurantDailyPoint"
+                        }
+                    }
+                }
+            },
+            "RestaurantDailyPoint": {
+                "type": "object",
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "orders": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "gmv": {
+                        "type": "number"
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    }
+}

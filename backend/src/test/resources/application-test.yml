@@ -1,0 +1,7 @@
+app:
+  payments:
+    mock-webhook-delay: PT0.2S
+  menu-ai:
+    mock-processing-delay: PT0.1S
+  storage:
+    local-root: target/test-uploads
