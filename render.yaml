@@ -37,4 +37,4 @@ services:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
       - key: APP_PUBLIC_BASE_URL
-        value: https://frontend-btppcg70y-aryan-sainis-projects.vercel.app
+        value: https://frontend-six-lyart-52.vercel.app
