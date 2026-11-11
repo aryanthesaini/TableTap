@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TableTap — Product Demo</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;display:flex;align-items:center;justify-content:center;height:100vh;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}
+#stage{width:1280px;height:720px;position:relative;overflow:hidden;background:#06060f;transform-origin:top left}
+
+/* ───── BACKGROUND ───── */
+.bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(16,185,129,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(16,185,129,.04) 1px,transparent 1px);background-size:64px 64px;pointer-events:none}
+.orb{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none;opacity:.7}
+
+/* ───── SCENE SYSTEM ───── */
+.scene{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .7s ease}
+.scene.active{opacity:1}
+
+/* ───── PROGRESS BAR ───── */
+#prog{position:absolute;bottom:0;left:0;height:3px;background:linear-gradient(90deg,#10b981,#34d399);width:0%;z-index:99;transition:width .1s linear}
+
+/* ───── PLAY OVERLAY ───── */
+#play{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.72);z-index:98;cursor:pointer;gap:16px}
+.play-ring{width:80px;height:80px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;transition:transform .2s,background .2s}
+.play-ring:hover{background:rgba(255,255,255,.2);transform:scale(1.08)}
+.play-ring svg{width:28px;height:28px;fill:#fff;margin-left:4px}
+#play p{color:rgba(255,255,255,.55);font-size:15px;letter-spacing:.3px}
+
+/* ───── KEYFRAMES ───── */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
+@keyframes slideLeft{from{opacity:0;transform:translateX(50px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideRight{from{opacity:0;transform:translateX(-50px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes barUp{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes scan{0%{top:4px;opacity:1}85%{top:calc(100% - 4px);opacity:1}100%{top:calc(100% - 4px);opacity:0}}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-12px) rotate(-2deg)}}
+@keyframes notifSlide{from{opacity:0;transform:translateX(60px)}to{opacity:1;transform:translateX(0)}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}50%{box-shadow:0 0 0 12px rgba(16,185,129,0)}}
+@keyframes heatIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+@keyframes countUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes orbit{from{transform:rotate(0deg) translateX(180px)}to{transform:rotate(360deg) translateX(180px)}}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes checkPop{0%{transform:scale(0)}70%{transform:scale(1.3)}100%{transform:scale(1)}}
+
+/* ───── TYPOGRAPHY ───── */
+.d1{font-size:88px;font-weight:900;color:#fff;line-height:1;letter-spacing:-3px}
+.d2{font-size:64px;font-weight:900;color:#fff;line-height:1.05;letter-spacing:-2px}
+.h1{font-size:48px;font-weight:800;color:#fff;line-height:1.1;letter-spacing:-1.5px}
+.h2{font-size:34px;font-weight:700;color:#fff;line-height:1.2;letter-spacing:-.8px}
+.body{font-size:20px;font-weight:500;color:rgba(255,255,255,.65);line-height:1.6}
+.caption{font-size:16px;color:rgba(255,255,255,.45)}
+.em{color:#34d399}
+.em-y{color:#fbbf24}
+.em-b{color:#60a5fa}
+
+/* ───── BOTTOM LABEL ───── */
+.lbl{position:absolute;bottom:36px;left:50%;transform:translateX(-50%);text-align:center;width:960px;pointer-events:none}
+.lbl h4{font-size:24px;font-weight:700;color:#fff;letter-spacing:-.3px}
+.lbl p{font-size:16px;color:rgba(255,255,255,.55);margin-top:5px}
+
+/* ───── PHONE ───── */
+.phone{width:234px;height:480px;background:#111;border-radius:38px;border:6px solid #252525;position:relative;box-shadow:0 48px 90px rgba(0,0,0,.7),inset 0 0 0 1px rgba(255,255,255,.07);overflow:hidden;flex-shrink:0}
+.phone::before{content:'';position:absolute;top:12px;left:50%;transform:translateX(-50%);width:56px;height:5px;background:#252525;border-radius:3px;z-index:20}
+.pscreen{width:100%;height:100%;background:#f5f5f5;border-radius:33px;overflow:hidden;position:relative}
+
+/* Phone screen – Woodpecker Cafe app */
+.p-header{background:#2F5016;padding:30px 12px 10px;color:#fff}
+.p-header .r-name{font-size:14px;font-weight:700;line-height:1.2}
+.p-header .r-sub{font-size:9px;opacity:.75;margin-top:1px}
+.p-tabs{background:#fff;display:flex;gap:4px;overflow:hidden;padding:6px 10px 4px;border-bottom:1px solid #eee}
+.p-tab{flex-shrink:0;font-size:9px;font-weight:600;padding:4px 8px;border-radius:20px;white-space:nowrap;color:#666}
+.p-tab.on{background:#2F5016;color:#fff}
+.p-items{background:#fff;padding:4px 0;overflow:hidden}
+.p-item{display:flex;align-items:center;padding:7px 10px;border-bottom:1px dashed #f0f0f0;gap:6px}
+.p-item .di{width:10px;height:10px;border-radius:2px;border:1.5px solid #15803d;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.p-item .di span{width:5px;height:5px;background:#15803d;border-radius:50%;display:block}
+.p-item .di.nv{border-color:#b91c1c}
+.p-item .di.nv span{background:none}
+.p-item .di.nv::after{content:'▲';font-size:4px;color:#b91c1c;line-height:1}
+.p-item .details{flex:1;min-width:0}
+.p-item .iname{font-size:10px;font-weight:600;color:#111;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-item .iprice{font-size:9px;font-weight:600;color:#333;margin-top:1px}
+.p-item .bs{font-size:7px;font-weight:700;color:#92400e;background:#fef3c7;padding:1px 4px;border-radius:3px;display:inline-block;margin-top:1px}
+.p-add{width:34px;height:22px;border-radius:6px;border:1.5px solid rgba(47,80,22,.3);background:#fff;font-size:9px;font-weight:700;color:#2F5016;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer}
+.p-add.qty{background:#2F5016;color:#fff;border-color:#2F5016;min-width:50px;justify-content:space-between;padding:0 5px}
+
+/* Phone table chip */
+.p-chip{background:#2F5016;color:#fff;font-size:9px;font-weight:600;border-radius:20px;padding:4px 10px;display:inline-block}
+
+/* Checkout phone content */
+.p-checkout{background:#f6f5f3;height:100%;display:flex;flex-direction:column}
+.p-co-head{background:#fff;padding:30px 12px 10px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:8px}
+.p-co-head .back{font-size:14px;color:#666}
+.p-co-head .rn{font-size:12px;font-weight:600}
+.p-co-head .tbl{font-size:10px;color:#2F5016;font-weight:600}
+.p-section{background:#fff;margin:6px 8px;border-radius:12px;padding:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.p-section h5{font-size:10px;font-weight:700;margin-bottom:6px;color:#111}
+.p-li{display:flex;justify-content:space-between;padding:4px 0;font-size:9px;border-bottom:1px dashed #f0f0f0}
+.p-li:last-child{border:none}
+.p-li .n{color:#333}
+.p-li .v{color:#111;font-weight:600}
+.p-total{display:flex;justify-content:space-between;padding:6px 0 2px;font-size:11px;font-weight:800;border-top:1.5px solid #eee;margin-top:4px}
+.p-btn-pay{background:#2F5016;color:#fff;border-radius:16px;height:40px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin:4px 8px 2px}
+.p-or{text-align:center;font-size:8px;color:#aaa;margin:3px 0;position:relative}
+.p-or::before,.p-or::after{content:'';position:absolute;top:50%;width:35%;height:1px;background:#e5e5e5}
+.p-or::before{left:12px} .p-or::after{right:12px}
+.p-btn-cash{background:#fff;color:#333;border-radius:16px;height:36px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;margin:0 8px;border:1.5px solid #ddd;gap:5px}
+
+/* Success screen */
+.p-success{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;gap:8px}
+.p-success .ck{width:52px;height:52px;background:#22c55e;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px}
+.p-success h3{font-size:14px;font-weight:800;color:#111}
+.p-success p{font-size:10px;color:#666;text-align:center;padding:0 20px}
+.p-success .ordn{font-size:28px;font-weight:900;color:#111}
+.p-success .tblb{font-size:12px;color:#2F5016;font-weight:700}
+
+/* ───── LAPTOP ───── */
+.laptop{position:relative;display:flex;flex-direction:column;align-items:center}
+.lscreen{width:580px;height:360px;background:#f1f5f9;border-radius:8px 8px 0 0;border:2.5px solid #2a2a2a;border-bottom:none;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.55)}
+.lbezel{width:596px;height:22px;background:#1e1e1e;border-left:2.5px solid #2a2a2a;border-right:2.5px solid #2a2a2a}
+.lbase{width:640px;height:14px;background:linear-gradient(to bottom,#2a2a2a,#111);border-radius:0 0 8px 8px}
+.lbase::after{content:'';display:block;width:120px;height:5px;background:#111;margin:0 auto;border-radius:0 0 4px 4px}
+
+/* Dashboard UI inside laptop */
+.db{display:flex;height:100%;font-size:12px}
+.db-side{width:148px;background:#111827;padding:16px 0;flex-shrink:0}
+.db-logo{color:#fff;font-size:14px;font-weight:800;padding:0 16px 16px;border-bottom:1px solid rgba(255,255,255,.08);letter-spacing:-.3px}
+.db-logo span{color:#34d399}
+.db-nav{padding:12px 0}
+.db-ni{display:flex;align-items:center;gap:8px;padding:8px 16px;color:rgba(255,255,255,.5);font-size:11px;font-weight:500;cursor:pointer}
+.db-ni.on{color:#fff;background:rgba(255,255,255,.08)}
+.db-ni svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8}
+.db-main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.db-top{padding:16px 20px 12px;border-bottom:1px solid #e5e7eb;background:#fff}
+.db-top h2{font-size:16px;font-weight:800;color:#111;letter-spacing:-.3px}
+.db-top p{font-size:11px;color:#9ca3af;margin-top:1px}
+.db-stats{display:flex;gap:1px;padding:12px 20px;background:#f9fafb;border-bottom:1px solid #e5e7eb}
+.db-stat{flex:1;text-align:center}
+.db-stat .sv{font-size:20px;font-weight:800;color:#111;line-height:1}
+.db-stat .sl{font-size:9px;color:#9ca3af;margin-top:2px}
+.db-stat .sc{font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;margin-top:3px;display:inline-block}
+.db-stat .sc.pending{background:#fef3c7;color:#92400e}
+.db-stat .sc.served{background:#d1fae5;color:#065f46}
+.db-cards{flex:1;padding:14px 20px;display:grid;grid-template-columns:1fr 1fr;gap:10px;overflow:hidden}
+.order-card{background:#fff;border-radius:10px;border:1px solid #e5e7eb;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.order-card.new{border-color:#10b981;animation:notifSlide .5s ease both}
+.oc-top{padding:8px 10px;flex:1}
+.oc-num{font-size:13px;font-weight:800;color:#111}
+.oc-tbl{font-size:10px;color:#10b981;font-weight:600;margin-top:1px}
+.oc-items{margin-top:6px}
+.oc-item{font-size:10px;color:#374151;padding:1px 0;display:flex;align-items:center;gap:4px}
+.oc-item::before{content:'•';color:#10b981;font-size:8px}
+.oc-time{font-size:9px;color:#9ca3af;margin-top:4px}
+.oc-time span{color:#ef4444;font-weight:600}
+.oc-note{margin-top:4px;font-size:9px;color:#92400e;background:#fef3c7;padding:3px 6px;border-radius:4px}
+.oc-foot{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-top:1px solid #f3f4f6}
+.oc-amt{font-size:10px;color:#6b7280}
+.oc-amt b{color:#059669}
+.oc-btn{font-size:9px;font-weight:700;background:#111827;color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;display:flex;align-items:center;gap:3px}
+
+/* New order notification badge */
+.notif-badge{position:absolute;top:12px;right:12px;background:#ef4444;color:#fff;font-size:8px;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+
+/* ───── QR SCENE ───── */
+.table-surface{width:220px;height:280px;background:linear-gradient(145deg,#8B6914,#6B4F0F);border-radius:16px;display:flex;align-items:center;justify-content:center;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.table-surface::after{content:'';position:absolute;inset:0;border-radius:16px;background:repeating-linear-gradient(45deg,rgba(255,255,255,.03) 0px,rgba(255,255,255,.03) 1px,transparent 1px,transparent 8px)}
+.qr-card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.35);text-align:center;position:relative;overflow:hidden}
+.qr-card .cafe-name{font-size:11px;font-weight:800;color:#2F5016;margin-bottom:8px;letter-spacing:-.2px}
+.qr-card .scan-hint{font-size:9px;color:#9ca3af;margin-top:8px}
+.scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#10b981,transparent);animation:scan 1.8s ease-in-out infinite;pointer-events:none;z-index:5}
+
+/* ───── INSIGHTS ───── */
+.insights-wrap{display:flex;flex-direction:column;width:900px;gap:16px}
+.kpi-row{display:flex;gap:12px}
+.kpi{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:16px 20px}
+.kpi .kv{font-size:28px;font-weight:800;color:#fff;letter-spacing:-.5px;line-height:1}
+.kpi .kl{font-size:11px;color:rgba(255,255,255,.5);margin-top:4px;font-weight:500}
+.kpi .kh{font-size:10px;color:rgba(255,255,255,.35);margin-top:2px}
+.charts-row{display:flex;gap:12px}
+.chart-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px}
+.chart-title{font-size:12px;font-weight:700;color:rgba(255,255,255,.8);margin-bottom:12px}
+.chart-title span{font-size:10px;font-weight:500;color:rgba(255,255,255,.4);margin-left:4px}
+.bar-chart{display:flex;align-items:flex-end;gap:8px;height:100px}
+.bar-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1}
+.bar{border-radius:6px 6px 0 0;width:100%;transform-origin:bottom;animation:barUp .6s ease both;background:rgba(52,211,153,.7)}
+.bar.hi{background:#34d399}
+.bar-label{font-size:9px;color:rgba(255,255,255,.45)}
+.bar-val{font-size:9px;color:rgba(255,255,255,.65);font-weight:600}
+
+/* Heatmap */
+.heatmap{display:flex;gap:2px}
+.hm-labels{display:flex;flex-direction:column;gap:2px;padding-top:14px}
+.hm-day{font-size:8px;color:rgba(255,255,255,.4);width:22px;text-align:right;height:14px;display:flex;align-items:center;justify-content:flex-end}
+.hm-grid{flex:1}
+.hm-hours{display:flex;gap:2px;margin-bottom:3px;padding-left:0}
+.hm-hour{font-size:7px;color:rgba(255,255,255,.35);width:14px;text-align:center;flex-shrink:0}
+.hm-row{display:flex;gap:2px;margin-bottom:2px}
+.hm-cell{width:14px;height:14px;border-radius:2px;animation:heatIn .3s ease both}
+
+/* Pattern badge */
+.pattern-badge{background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);color:#fbbf24;font-size:12px;font-weight:600;padding:8px 16px;border-radius:100px;display:inline-flex;align-items:center;gap:8px}
+
+/* ───── CTA SCENE ───── */
+.cta-logo{font-size:72px;font-weight:900;color:#fff;letter-spacing:-3px}
+.cta-logo span{color:#34d399}
+.cta-pill{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.35);color:#34d399;font-size:14px;font-weight:600;padding:10px 24px;border-radius:100px;display:inline-block}
+.particle{position:absolute;width:4px;height:4px;border-radius:50%;background:#34d399;opacity:.5}
+
+/* ───── TIMING HELPERS ───── */
+.d1{animation-delay:.1s} .d2{animation-delay:.4s} .d3{animation-delay:.7s} .d4{animation-delay:1s} .d5{animation-delay:1.3s} .d6{animation-delay:1.6s} .d7{animation-delay:1.9s}
+.b1{animation-delay:.2s} .b2{animation-delay:.5s} .b3{animation-delay:.8s} .b4{animation-delay:1.1s}
+
+/* Scene-specific active animations */
+#s1.active .ln{opacity:0;animation:fadeInUp .6s ease both}
+#s2.active .s2-logo{opacity:0;animation:scaleIn .7s ease both}
+#s2.active .s2-tag{opacity:0;animation:fadeInUp .6s ease both .4s}
+#s2.active .fp{opacity:0;animation:fadeInUp .5s ease both}
+#s3.active .qr-card{opacity:0;animation:slideRight .7s ease both .2s}
+#s3.active .phone{opacity:0;animation:slideLeft .7s ease both .5s}
+#s3.active .s3-txt h2{opacity:0;animation:fadeInUp .6s ease both 1s}
+#s3.active .s3-txt p{opacity:0;animation:fadeInUp .6s ease both 1.3s}
+#s4.active .phone{opacity:0;animation:slideRight .7s ease both .2s}
+#s4.active .s4r div{opacity:0;animation:slideLeft .6s ease both}
+#s5.active .phone{opacity:0;animation:scaleIn .7s ease both .2s}
+#s6.active .phone{opacity:0;animation:slideRight .7s ease both .2s}
+#s6.active .laptop{opacity:0;animation:slideLeft .7s ease both .6s}
+#s6.active .notif-wrap{opacity:0;animation:notifSlide .6s ease both 1.4s}
+#s7.active .laptop{opacity:0;animation:scaleIn .7s ease both .2s}
+#s8.active .kpi{opacity:0;animation:fadeInUp .5s ease both}
+#s8.active .charts-row{opacity:0;animation:fadeInUp .6s ease both .8s}
+#s8.active .pattern-badge{opacity:0;animation:fadeInUp .5s ease both 1.4s}
+#s9.active .cta-logo{opacity:0;animation:scaleIn .8s ease both .2s}
+#s9.active .cta-tag{opacity:0;animation:fadeInUp .6s ease both .7s}
+#s9.active .cta-feat{opacity:0;animation:fadeInUp .5s ease both 1s}
+#s9.active .cta-pill{opacity:0;animation:fadeInUp .5s ease both 1.4s}
+#s9.active .particle{animation:float 3s ease-in-out infinite}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="bg-grid"></div>
+  <div class="orb" style="width:500px;height:500px;top:-150px;left:-80px;background:rgba(16,185,129,.12)"></div>
+  <div class="orb" style="width:350px;height:350px;bottom:-80px;right:-60px;background:rgba(99,102,241,.1)"></div>
+
+  <!-- ═══════════════════════════════════════════
+       SCENE 1 — Problem Hook  (0–8s)
+  ═══════════════════════════════════════════ -->
+  <div class="scene" id="s1">
+    <div style="text-align:center;max-width:800px">
+      <div class="ln" style="font-size:36px;font-weight:700;color:rgba(255,255,255,.45);animation-delay:.1s;margin-bottom:20px;letter-spacing:-.5px">Still managing orders on sticky notes?</div>
+      <div class="ln" style="font-size:36px;font-weight:700;color:rgba(255,255,255,.45);animation-delay:.9s;margin-bottom:20px;letter-spacing:-.5px">Guessing your café's peak hours?</div>
+      <div class="ln" style="font-size:36px;font-weight:700;color:rgba(255,255,255,.45);animation-delay:1.7s;margin-bottom:48px;letter-spacing:-.5px">Watching bestsellers go unnoticed?</div>
+      <div class="ln" style="font-size:76px;font-weight:900;color:#fff;animation-delay:2.8s;letter-spacing:-3px;line-height:1">There's a smarter way. <span style="color:#34d399">→</span></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCENE 2 — Brand Reveal  (7.5–15s)
+  ═══════════════════════════════════════════ -->
+  <div class="scene" id="s2">
+    <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:24px">
+      <div class="s2-logo" style="font-size:96px;font-weight:900;color:#fff;letter-spacing:-4px;line-height:1">Table<span style="color:#34d399">Tap</span></div>
+      <div class="s2-tag" style="font-size:24px;font-weight:500;color:rgba(255,255,255,.65);letter-spacing:-.3px">The all-in-one ordering platform for modern cafés</div>
+      <div style="display:flex;gap:12px;margin-top:8px">
+        <div class="fp" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:15px;font-weight:600;padding:10px 20px;border-radius:100px;animation-delay:.7s">📱&nbsp; QR Ordering</div>
+        <div class="fp" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:15px;font-weight:600;padding:10px 20px;border-radius:100px;animation-delay:1s">📊&nbsp; Live Dashboard</div>
+        <div class="fp" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:#fff;font-size:15px;font-weight:600;padding:10px 20px;border-radius:100px;animation-delay:1.3s">🧠&nbsp; AI Insights</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCENE 3 — QR Scan  (14.5–27s)
+  ═══════════════════════════════════════════ -->
+  <div class="scene" id="s3">
+    <div style="display:flex;align-items:center;gap:72px">
+      <!-- Table with QR -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:24px">
+        <div class="table-surface">
+          <div class="qr-card">
+            <div class="scan-line"></div>
+            <div class="cafe-name">The Woodpecker Cafe</div>
+            <svg width="110" height="110" viewBox="0 0 21 21" style="display:block">
+              <!-- TL marker --><rect x="1" y="1" width="7" height="7" fill="none" stroke="#111" stroke-width=".8"/><rect x="2.5" y="2.5" width="4" height="4" fill="#111"/>
+              <!-- TR marker --><rect x="13" y="1" width="7" height="7" fill="none" stroke="#111" stroke-width=".8"/><rect x="14.5" y="2.5" width="4" height="4" fill="#111"/>
+              <!-- BL marker --><rect x="1" y="13" width="7" height="7" fill="none" stroke="#111" stroke-width=".8"/><rect x="2.5" y="14.5" width="4" height="4" fill="#111"/>
+              <!-- Data -->
+              <rect x="9" y="1" width="1" height="1" fill="#111"/><rect x="11" y="1" width="1" height="1" fill="#111"/>
+              <rect x="9" y="3" width="2" height="1" fill="#111"/><rect x="10" y="5" width="1" height="1" fill="#111"/>
+              <rect x="9" y="7" width="1" height="1" fill="#111"/><rect x="11" y="6" width="1" height="2" fill="#111"/>
+              <rect x="1" y="9" width="1" height="1" fill="#111"/><rect x="3" y="9" width="2" height="1" fill="#111"/>
+              <rect x="6" y="9" width="1" height="1" fill="#111"/><rect x="8" y="9" width="1" height="1" fill="#111"/>
+              <rect x="10" y="9" width="2" height="1" fill="#111"/><rect x="13" y="9" width="1" height="1" fill="#111"/>
+              <rect x="15" y="9" width="2" height="1" fill="#111"/><rect x="18" y="9" width="1" height="1" fill="#111"/>
+              <rect x="1" y="11" width="2" height="1" fill="#111"/><rect x="4" y="11" width="1" height="1" fill="#111"/>
+              <rect x="6" y="11" width="2" height="1" fill="#111"/><rect x="9" y="11" width="1" height="1" fill="#111"/>
+              <rect x="11" y="11" width="2" height="1" fill="#111"/><rect x="14" y="11" width="1" height="1" fill="#111"/>
+              <rect x="16" y="11" width="1" height="1" fill="#111"/><rect x="18" y="11" width="2" height="1" fill="#111"/>
+              <rect x="13" y="13" width="1" height="1" fill="#111"/><rect x="15" y="13" width="1" height="1" fill="#111"/>
+              <rect x="17" y="13" width="1" height="1" fill="#111"/><rect x="19" y="13" width="1" height="1" fill="#111"/>
+              <rect x="13" y="15" width="2" height="1" fill="#111"/><rect x="16" y="15" width="1" height="1" fill="#111"/>
+              <rect x="18" y="15" width="1" height="1" fill="#111"/><rect x="13" y="17" width="1" height="1" fill="#111"/>
+              <rect x="15" y="17" width="2" height="1" fill="#111"/><rect x="18" y="17" width="2" height="1" fill="#111"/>
+              <rect x="13" y="19" width="1" height="1" fill="#111"/><rect x="16" y="19" width="1" height="1" fill="#111"/>
+              <rect x="18" y="19" width="2" height="1" fill="#111"/>
+            </svg>
+            <div class="scan-hint">Scan to order • No app needed</div>
+          </div>
+        </div>
+        <div style="color:rgba(255,255,255,.5);font-size:13px">Every table has its own QR card</div>
+      </div>
+      <!-- Arrow -->
+      <div style="font-size:40px;color:rgba(255,255,255,.25)">→</div>
+      <!-- Phone with app loaded -->
+      <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+        <div class="phone" style="animation:float 4s ease-in-out infinite">
+          <div class="pscreen">
+            <div class="p-header">
+              <div class="r-name">The Woodpecker Cafe</div>
+              <div class="r-sub">Korean Fusion · Café · 12 Church Street, MG Road</div>
+              <div style="margin-top:8px"><span class="p-chip">📍 You're at Table 3</span></div>
+            </div>
+            <div class="p-tabs">
+              <div class="p-tab on">Chef's Specials</div>
+              <div class="p-tab">Korean</div>
+              <div class="p-tab">Pizza</div>
+              <div class="p-tab">Sushi</div>
+              <div class="p-tab">Drinks</div>
+            </div>
+            <div style="padding:6px 10px 4px;background:#fff;border-bottom:1px solid #eee">
+              <div style="font-size:11px;font-weight:700;color:#111">Chef's Specials</div>
+              <div style="font-size:9px;color:#9ca3af">Ramyun bowls made fresh to order</div>
+            </div>
+            <div class="p-items">
+              <div class="p-item">
+                <div class="di"><span></span></div>
+                <div class="details">
+                  <div class="iname">Carbonara Ramyun</div>
+                  <div class="bs">⭐ Bestseller</div>
+                  <div class="iprice">₹220</div>
+                </div>
+                <div class="p-add">Add</div>
+              </div>
+              <div class="p-item">
+                <div class="di nv"></div>
+                <div class="details"><div class="iname">Spicy Kimchi Ramyun</div><div class="bs">⭐ Bestseller</div><div class="iprice">₹220</div></div>
+                <div class="p-add">Add</div>
+              </div>
+              <div class="p-item">
+                <div class="di"><span></span></div>
+                <div class="details"><div class="iname">Tan Tan Ramyun</div><div class="iprice">₹220</div></div>
+                <div class="p-add">Add</div>
+              </div>
+              <div class="p-item">
+                <div class="di"><span></span></div>
+                <div class="details"><div class="iname">Woodpecker Special Pizza</div><div class="bs">⭐ Bestseller</div><div class="iprice">₹180</div></div>
+                <div class="p-add">Add</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="color:rgba(255,255,255,.45);font-size:11px">Loads instantly, no app download</div>
+      </div>
+      <!-- Text -->
+      <div class="s3-txt" style="max-width:280px">
+        <h2 style="font-size:34px;font-weight:800;color:#fff;line-height:1.15;letter-spacing:-.8px">One scan. The whole menu.</h2>
+        <p style="font-size:17px;color:rgba(255,255,255,.6);margin-top:12px;line-height:1.6">Customers scan the QR on their table. Your menu opens in their browser — no app, no waiting, no friction.</p>
+      </div>
+    </div>
+    <div class="lbl"><h4>QR Ordering — Scan &amp; Go</h4><p>Works on any phone, any browser. Menus stay up to date in real time.</p></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCENE 4 — Menu Browse  (26.5–39s)
+  ═══════════════════════════════════════════ -->
+  <div class="scene" id="s4">
+    <div style="display:flex;align-items:center;gap:80px">
+      <div class="phone">
+        <div class="pscreen">
+          <div class="p-header">
+            <div class="r-name">The Woodpecker Cafe</div>
+            <div class="r-sub">Korean Fusion · Café</div>
+          </div>
+          <div class="p-tabs">
+            <div class="p-tab on">Pizza</div>
+            <div class="p-tab">Sushi</div>
+            <div class="p-tab">Burgers</div>
+            <div class="p-tab">Drinks</div>
+          </div>
+          <div style="padding:6px 10px 4px;background:#fff;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center">
+            <div style="font-size:11px;font-weight:700;color:#111">Pizza <span style="color:#9ca3af;font-weight:400;font-size:9px">7 items</span></div>
+          </div>
+          <div class="p-items">
+            <div class="p-item"><div class="di"><span></span></div><div class="details"><div class="iname">Margherita</div><div class="iprice">₹140</div></div><div class="p-add">Add</div></div>
+            <div class="p-item"><div class="di"><span></span></div><div class="details"><div class="iname">Corn Delight</div><div class="iprice">₹150</div></div><div class="p-add">Add</div></div>
+            <div class="p-item"><div class="di"><span></span></div><div class="details"><div class="iname">Paneer Paradise</div><div class="iprice">₹150</div></div><div class="p-add qty">−&nbsp;1&nbsp;+</div></div>
+            <div class="p-item"><div class="di"><span></span></div><div class="details"><div class="iname">Woodpecker Special</div><div class="bs">⭐ Bestseller</div><div class="iprice">₹180</div></div><div class="p-add">Add</div></div>
+            <div class="p-item"><div class="di nv"></div><div class="details"><div class="iname">Chicken Delight</div><div class="iprice">₹250</div></div><div class="p-add">Add</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="s4r" style="max-width:420px;display:flex;flex-direction:column;gap:28px">
+        <div style="animation-delay:.5s">
+          <div style="font-size:13px;font-weight:700;color:#34d399;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px">Beautiful Menus</div>
+          <div style="font-size:30px;font-weight:800;color:#fff;line-height:1.2;letter-spacing:-.5px">12 categories.<br/>60+ items. Always live.</div>
+        </div>
+        <div style="animation-delay:.9s">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="width:32px;height:32px;background:rgba(52,211,153,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px">🔍</div>
+            <div><div style="font-size:15px;font-weight:700;color:#fff">Search &amp; filter built in</div><div style="font-size:13px;color:rgba(255,255,255,.55)">Veg-only toggle, item search</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <div style="width:32px;height:32px;background:rgba(52,211,153,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px">⭐</div>
+            <div><div style="font-size:15px;font-weight:700;color:#fff">Bestseller badges</div><div style="font-size:13px;color:rgba(255,255,255,.55)">Highlight your top sellers automatically</div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:32px;height:32px;background:rgba(52,211,153,.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px">🌿</div>
+            <div><div style="font-size:15px;font-weight:700;color:#fff">Dietary indicators</div><div style="font-size:13px;color:rgba(255,255,255,.55)">Veg / Non-veg / Egg — always visible</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl"><h4>Your Menu, Beautifully Presented</h4><p>Update items, prices, and availability from the dashboard — changes reflect instantly on every table.</p></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCENE 5 — Ordering + Payment  (38.5–51s)
+  ═══════════════════════════════════════════ -->
+  <div class="scene" id="s5">
+    <div style="display:flex;align-items:center;gap:80px">
+      <div style="text-align:center;max-width:360px">
+        <div style="font-size:13px;font-weight:700;color:#34d399;letter-spacing:.5px;text-transform:uppercase;margin-bottom:16px">Zero Friction Checkout</div>
+        <div style="font-size:40px;font-weight:900;color:#fff;line-height:1.1;letter-spacing:-1.5px">Pay online<br/>or at the counter.</div>
+        <div style="font-size:17px;color:rgba(255,255,255,.6);margin-top:16px;line-height:1.6">Customers pay by UPI, card, or choose to pay cash at the counter. Your call, their convenience.</div>
+        <div style="display:flex;gap:10px;margin-top:28px;justify-content:center">
+          <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:100px;padding:8px 16px;font-size:13px;font-weight:600;color:rgba(255,255,255,.8)">💳 UPI / Card</div>
+          <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:100px;padding:8px 16px;font-size:13px;font-weight:600;color:rgba(255,255,255,.8)">💵 Cash at counter</div>
+        </div>
+      </div>
+      <!-- Phone with checkout -->
+      <div class="phone" id="checkout-phone">
+        <div class="pscreen" id="checkout-screen">
+          <div class="p-checkout">
+            <div class="p-co-head">
+              <div class="back">←</div>
+              <div><div class="rn">The Woodpecker Cafe</div><div class="tbl">Ordering for Table 3</div></div>
+            </div>
+            <div class="p-section">
+              <h5>Your Order</h5>
+              <div class="p-li"><span class="n">2× Carbonara Ramyun</span><span class="v">₹440</span></div>
+              <div class="p-li"><span class="n">1× Chocolate Brownie</span><span class="v">₹120</span></div>
+              <div class="p-li"><span class="n">1× Green Apple Mojito</span><span class="v">₹150</span></div>
+            </div>
+            <div class="p-section">
+              <div class="p-li"><span class="n" style="color:#9ca3af">Item total</span><span class="v" style="color:#9ca3af">₹710</span></div>
+              <div class="p-li"><span class="n" style="color:#9ca3af">GST (5%)</span><span class="v" style="color:#9ca3af">₹35.50</span></div>
+              <div class="p-total"><span>To pay</span><span>₹745.50</span></div>
+            </div>
+            <div class="p-btn-pay">Pay ₹745.50</div>
+            <div class="p-or">or</div>
+            <div class="p-btn-cash" id="cash-btn">💵 Pay at counter (Cash)</div>
+          </div>
+        </div>
+      </div>
+      <!-- Success state (shown after delay) -->
+      <div class="phone" id="success-phone" style="opacity:0;position:absolute;right:calc(50% - 117px)">
+        <div class="pscreen">
+          <div class="p-success">
+            <div class="ck" style="animation:checkPop .4s ease both">✓</div>
+            <h3>Order Placed!</h3>
+            <p>Pay at the counter when ready.<br/>Your food is being prepared.</p>
+            <div style="display:flex;gap:16px;margin-top:8px;background:#f9fafb;border-radius:12px;padding:10px 20px;border:1px solid #eee">
+              <div style="text-align:center"><div style="font-size:9px;color:#9ca3af">Order #</div><div class="ordn">1382</div></div>
+              <div style="width:1px;background:#eee"></div>
+              <div style="text-align:center"><div style="font-size:9px;color:#9ca3af">Table</div><div style="font-size:28px;font-weight:900;color:#2F5016">3</div></div>
+            </div>
+            <div style="margin-top:8px;background:#d1fae5;color:#065f46;font-size:9px;font-weight:600;padding:4px 12px;border-radius:20px">🍽️ Kitchen has your order</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl"><h4>Flexible Payments — Online or Cash</h4><p>No payment gateway? No problem. Cash orders go straight to the kitchen too.</p></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCENE 6 — Dashboard Notification  (50.5–63s)
+  ═══════════════════════════════════════════ -->
+  <div class="scene" id="s6">
+    <div style="display:flex;align-items:center;gap:60px">
+      <!-- Phone success -->
+      <div class="phone" style="transform:scale(.85);transform-origin:center">
+        <div class="pscreen">
+          <div class="p-success">
+            <div class="ck">✓</div>
+            <h3>Order Placed!</h3>
+            <p>Your order is confirmed and<br/>heading to the kitchen.</p>
+            <div style="display:flex;gap:12px;margin-top:8px;background:#f9fafb;border-radius:12px;padding:10px 16px;border:1px solid #eee">
+              <div style="text-align:center"><div style="font-size:8px;color:#9ca3af">Order #</div><div class="ordn" style="font-size:24px">1382</div></div>
+              <div style="width:1px;background:#eee"></div>
+              <div style="text-align:center"><div style="font-size:8px;color:#9ca3af">Table</div><div style="font-size:24px;font-weight:900;color:#2F5016">3</div></div>
+            </div>
+            <div style="font-size:9px;color:#065f46;background:#d1fae5;padding:4px 10px;border-radius:20px;margin-top:4px">Payment: Cash at counter</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:36px;color:rgba(255,255,255,.2)">→→</div>
+
+      <!-- Laptop with dashboard -->
+      <div style="position:relative">
+        <div class="laptop">
+          <div class="lscreen">
+            <div class="db">
+              <div class="db-side">
+                <div class="db-logo">Table<span>Tap</span></div>
+                <div class="db-nav">
+                  <div class="db-ni"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Overview</div>
+                  <div class="db-ni on"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="13" height="13" rx="2"/><path d="M5 7H2v14h13v-3"/></svg>Orders</div>
+                  <div class="db-ni"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>Menu</div>
+                  <div class="db-ni"><svg viewBox="0 0 24 24"><path d="M3 10h18M3 14h18M10 3v18"/></svg>Tables</div>
+                  <div class="db-ni"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>Insights</div>
+                </div>
+              </div>
+              <div class="db-main">
+                <div class="db-top">
+                  <h2>Orders</h2>
+                  <p>Live board — pending orders refresh every 8 seconds</p>
+                </div>
+                <div class="db-stats">
+                  <div class="db-stat"><div class="sv" style="color:#ef4444">3</div><div class="sl">Pending</div><div class="sc pending">Needs attention</div></div>
+                  <div class="db-stat"><div class="sv">18</div><div class="sl">Served today</div><div class="sc served">All good</div></div>
+                  <div class="db-stat"><div class="sv">₹14,820</div><div class="sl">Revenue today</div></div>
+                </div>
+                <div class="db-cards">
+                  <div class="order-card">
+                    <div class="oc-top">
+                      <div class="oc-num">#1380</div>
+                      <div class="oc-tbl">Table 1</div>
+                      <div class="oc-items">
+                        <div class="oc-item">2× Carbonara Ramyun</div>
+                        <div class="oc-item">1× Woodpecker Sushi</div>
+                      </div>
+                      <div class="oc-time">Waiting <span>12 min</span></div>
+                    </div>
+                    <div class="oc-foot"><div class="oc-amt">₹690 · <b>Paid</b></div><div class="oc-btn">✓ Served</div></div>
+                  </div>
+                  <!-- New order notification card -->
+                  <div class="order-card new notif-wrap" style="border-color:#10b981;position:relative">
+                    <div style="position:absolute;top:-8px;right:-8px;background:#ef4444;color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:100px;z-index:5;animation:glow 1.5s ease-in-out infinite">NEW</div>
+                    <div class="oc-top">
+                      <div class="oc-num">#1382 <span style="font-size:9px;color:#f59e0b;font-weight:600">· Cash</span></div>
+                      <div class="oc-tbl">Table 3</div>
+                      <div class="oc-items">
+                        <div class="oc-item">2× Carbonara Ramyun</div>
+                        <div class="oc-item">1× Chocolate Brownie</div>
+                        <div class="oc-item">1× Green Apple Mojito</div>
+                      </div>
+                      <div class="oc-time">Just now</div>
+                    </div>
+                    <div class="oc-foot"><div class="oc-amt">₹745 · <b style="color:#f59e0b">Cash</b></div><div class="oc-btn">✓ Served</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="lbezel"></div>
+          <div class="lbase"></div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl"><h4>Your Kitchen Knows Instantly</h4><p>Every order — online or cash — appears on your dashboard in real time. No calls, no confusion.</p></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCENE 7 — Live Orders Board  (62.5–75s)
+  ═══════════════════════════════════════════ -->
+  <div class="scene" id="s7">
+    <div style="display:flex;align-items:center;gap:64px">
+      <div class="laptop">
+        <div class="lscreen">
+          <div class="db">
+            <div class="db-side">
+              <div class="db-logo">Table<span>Tap</span></div>
+              <div class="db-nav">
+                <div class="db-ni"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Overview</div>
+                <div class="db-ni on"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="13" height="13" rx="2"/><path d="M5 7H2v14h13v-3"/></svg>Orders</div>
+                <div class="db-ni"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>Menu</div>
+                <div class="db-ni"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>Insights</div>
+              </div>
+            </div>
+            <div class="db-main">
+              <div class="db-top" style="display:flex;justify-content:space-between;align-items:center">
+                <div><h2>Orders</h2><p>3 pending · refreshes every 8s</p></div>
+                <div style="font-size:10px;background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:6px;font-weight:600">3 Pending</div>
+              </div>
+              <div style="flex:1;padding:12px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;overflow:hidden">
+                <div class="order-card" style="border-left:3px solid #ef4444">
+                  <div class="oc-top">
+                    <div class="oc-num">#1380</div><div class="oc-tbl">Table 1</div>
+                    <div class="oc-items"><div class="oc-item">2× Carbonara Ramyun</div><div class="oc-item">1× Woodpecker Sushi</div></div>
+                    <div class="oc-note">⚠ Less spicy please</div>
+                    <div class="oc-time">Waiting <span>14 min</span></div>
+                  </div>
+                  <div class="oc-foot"><div class="oc-amt">₹690 · <b>Paid</b></div><div class="oc-btn">✓ Served</div></div>
+                </div>
+                <div class="order-card">
+                  <div class="oc-top">
+                    <div class="oc-num">#1381</div><div class="oc-tbl">Table 5</div>
+                    <div class="oc-items"><div class="oc-item">1× Woodpecker Special Pizza</div><div class="oc-item">2× Cold Coffee</div><div class="oc-item">1× Biscoff Cheesecake</div></div>
+                    <div class="oc-time">Waiting <span>6 min</span></div>
+                  </div>
+                  <div class="oc-foot"><div class="oc-amt">₹665 · <b>Paid</b></div><div class="oc-btn" style="background:#10b981">✓ Served</div></div>
+                </div>
+                <div class="order-card">
+                  <div class="oc-top">
+                    <div class="oc-num">#1382 <span style="font-size:8px;color:#f59e0b">Cash</span></div><div class="oc-tbl">Table 3</div>
+                    <div class="oc-items"><div class="oc-item">2× Carbonara Ramyun</div><div class="oc-item">1× Chocolate Brownie</div><div class="oc-item">1× Green Apple Mojito</div></div>
+                    <div class="oc-time">Just now</div>
+                  </div>
+                  <div class="oc-foot"><div class="oc-amt">₹745 · <b style="color:#f59e0b">Cash</b></div><div class="oc-btn">✓ Served</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="lbezel"></div><div class="lbase"></div>
+      </div>
+      <div style="max-width:300px;display:flex;flex-direction:column;gap:20px">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#34d399;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">Live Order Board</div>
+          <div style="font-size:30px;font-weight:800;color:#fff;line-height:1.2;letter-spacing:-.5px">Every table.<br/>Every order.<br/>In real time.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="width:28px;height:28px;border-radius:7px;background:rgba(239,68,68,.15);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px">⏱</div>
+            <div><div style="font-size:14px;font-weight:700;color:#fff">Wait time visible</div><div style="font-size:12px;color:rgba(255,255,255,.5)">Red alerts for long-waiting tables</div></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="width:28px;height:28px;border-radius:7px;background:rgba(52,211,153,.15);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px">✓</div>
+            <div><div style="font-size:14px;font-weight:700;color:#fff">One-tap to serve</div><div style="font-size:12px;color:rgba(255,255,255,.5)">Order disappears once marked served</div></div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="width:28px;height:28px;border-radius:7px;background:rgba(251,191,36,.15);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px">📝</div>
+            <div><div style="font-size:14px;font-weight:700;color:#fff">Customer notes</div><div style="font-size:12px;color:rgba(255,255,255,.5)">"Less spicy please" highlighted automatically</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl"><h4>Live Order Management — Mark Served in One Tap</h4><p>No missed tables. No miscommunication. Your entire floor, one dashboard.</p></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCENE 8 — AI Insights  (74.5–91s)
+  ═══════════════════════════════════════════ -->
+  <div class="scene" id="s8">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:0;width:1180px">
+      <!-- Header -->
+      <div style="text-align:center;margin-bottom:24px;opacity:0;animation:fadeInUp .6s ease both .1s" id="s8-head">
+        <div style="font-size:13px;font-weight:700;color:#34d399;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px">AI-Powered Analytics</div>
+        <div style="font-size:48px;font-weight:900;color:#fff;letter-spacing:-2px;line-height:1">Know what's working. Grow what matters.</div>
+      </div>
+      <!-- KPI Row -->
+      <div class="kpi-row" style="width:100%;margin-bottom:12px">
+        <div class="kpi b1"><div class="kv">₹1,24,500</div><div class="kl">4-week revenue</div><div class="kh">last 28 days · online payments</div></div>
+        <div class="kpi b2"><div class="kv">342</div><div class="kl">Total orders</div><div class="kh">avg ₹364 per order</div></div>
+        <div class="kpi b3"><div class="kv">Sunday</div><div class="kl">Busiest day</div><div class="kh">avg 23 orders/day</div></div>
+        <div class="kpi b4"><div class="kv" style="font-size:18px;line-height:1.3">Carbonara<br/>Ramyun</div><div class="kl">Top seller</div><div class="kh">87 sold in 28 days</div></div>
+      </div>
+      <!-- Charts row -->
+      <div class="charts-row" style="width:100%">
+        <!-- Bar chart -->
+        <div class="chart-card" style="flex:1">
+          <div class="chart-title">Weekly revenue <span>last 4 weeks</span></div>
+          <div class="bar-chart">
+            <div class="bar-wrap"><div style="font-size:9px;color:rgba(255,255,255,.5);margin-bottom:2px">₹28k</div><div class="bar" style="height:60px;animation-delay:.9s;opacity:.55"></div><div class="bar-label">W1</div></div>
+            <div class="bar-wrap"><div style="font-size:9px;color:rgba(255,255,255,.5);margin-bottom:2px">₹31k</div><div class="bar" style="height:72px;animation-delay:1.1s;opacity:.7"></div><div class="bar-label">W2</div></div>
+            <div class="bar-wrap"><div style="font-size:9px;color:rgba(255,255,255,.5);margin-bottom:2px">₹33k</div><div class="bar" style="height:82px;animation-delay:1.3s;opacity:.85"></div><div class="bar-label">W3</div></div>
+            <div class="bar-wrap"><div style="font-size:9px;color:rgba(255,255,255,.5);margin-bottom:2px">₹37k</div><div class="bar hi" style="height:100px;animation-delay:1.5s"></div><div class="bar-label" style="color:#34d399;font-weight:700">W4 ↑</div></div>
+          </div>
+          <div style="margin-top:10px;font-size:10px;color:rgba(255,255,255,.4)">Revenue trending up 7% week-over-week</div>
+        </div>
+        <!-- Heatmap -->
+        <div class="chart-card" style="flex:2">
+          <div class="chart-title">Peak hours heatmap <span>avg orders by day &amp; hour · 28 days</span></div>
+          <div class="heatmap" style="font-size:0">
+            <div class="hm-labels">
+              <div style="height:14px"></div>
+              <div class="hm-day">Mon</div><div class="hm-day">Tue</div><div class="hm-day">Wed</div>
+              <div class="hm-day">Thu</div><div class="hm-day">Fri</div><div class="hm-day">Sat</div><div class="hm-day">Sun</div>
+            </div>
+            <div class="hm-grid" style="flex:1">
+              <div class="hm-hours">
+                <div class="hm-hour">11a</div><div class="hm-hour">12p</div><div class="hm-hour">1p</div><div class="hm-hour">2p</div>
+                <div class="hm-hour">3p</div><div class="hm-hour">4p</div><div class="hm-hour">5p</div><div class="hm-hour">6p</div>
+                <div class="hm-hour">7p</div><div class="hm-hour">8p</div><div class="hm-hour">9p</div><div class="hm-hour">10p</div><div class="hm-hour">11p</div>
+              </div>
+              <div id="heatmap-grid"></div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:8px;justify-content:flex-end">
+            <span style="font-size:9px;color:rgba(255,255,255,.4)">Less</span>
+            <div style="width:16px;height:10px;border-radius:2px;background:rgba(16,185,129,.12)"></div>
+            <div style="width:16px;height:10px;border-radius:2px;background:rgba(16,185,129,.35)"></div>
+            <div style="width:16px;height:10px;border-radius:2px;background:rgba(16,185,129,.6)"></div>
+            <div style="width:16px;height:10px;border-radius:2px;background:rgba(16,185,129,.85)"></div>
+            <div style="width:16px;height:10px;border-radius:2px;background:#10b981"></div>
+            <span style="font-size:9px;color:rgba(255,255,255,.4)">More</span>
+          </div>
+        </div>
+        <!-- Top sellers -->
+        <div class="chart-card" style="width:200px;flex-shrink:0">
+          <div class="chart-title">Top sellers <span>28 days</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px">
+              <div style="display:flex;align-items:center;gap:5px"><span style="color:rgba(255,255,255,.4);width:12px">1</span><span style="color:#fff;font-weight:600">Carbonara Ramyun</span></div>
+              <span style="color:#34d399;font-weight:700">87</span>
+            </div>
+            <div style="height:1px;background:rgba(255,255,255,.06)"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px"><div style="display:flex;align-items:center;gap:5px"><span style="color:rgba(255,255,255,.4);width:12px">2</span><span style="color:rgba(255,255,255,.8)">Woodpecker Pizza</span></div><span style="color:rgba(255,255,255,.6);font-weight:700">72</span></div>
+            <div style="height:1px;background:rgba(255,255,255,.06)"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px"><div style="display:flex;align-items:center;gap:5px"><span style="color:rgba(255,255,255,.4);width:12px">3</span><span style="color:rgba(255,255,255,.8)">Cold Coffee</span></div><span style="color:rgba(255,255,255,.6);font-weight:700">68</span></div>
+            <div style="height:1px;background:rgba(255,255,255,.06)"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px"><div style="display:flex;align-items:center;gap:5px"><span style="color:rgba(255,255,255,.4);width:12px">4</span><span style="color:rgba(255,255,255,.8)">Chocolate Brownie</span></div><span style="color:rgba(255,255,255,.6);font-weight:700">61</span></div>
+            <div style="height:1px;background:rgba(255,255,255,.06)"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px"><div style="display:flex;align-items:center;gap:5px"><span style="color:rgba(255,255,255,.4);width:12px">5</span><span style="color:rgba(255,255,255,.8)">Green Apple Mojito</span></div><span style="color:rgba(255,255,255,.6);font-weight:700">54</span></div>
+          </div>
+        </div>
+      </div>
+      <!-- Outlier -->
+      <div style="margin-top:12px">
+        <div class="pattern-badge">⚡ Unusual spike: Sunday 10 pm · 2.5× busier than average — consider extra staff</div>
+      </div>
+    </div>
+    <div class="lbl" style="bottom:10px"><h4>AI Insights — Your Café's Personal Analyst</h4><p>Peak hours, bestsellers, weekly trends, and outlier alerts — updated automatically every hour.</p></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       SCENE 9 — CTA  (90.5–101s)
+  ═══════════════════════════════════════════ -->
+  <div class="scene" id="s9">
+    <!-- Floating particles -->
+    <div class="particle" style="top:15%;left:10%;animation-delay:.5s;width:6px;height:6px;opacity:.3"></div>
+    <div class="particle" style="top:70%;left:8%;animation-delay:1.1s;width:4px;height:4px"></div>
+    <div class="particle" style="top:25%;right:12%;animation-delay:.8s;width:5px;height:5px;opacity:.35"></div>
+    <div class="particle" style="top:75%;right:10%;animation-delay:1.4s;width:3px;height:3px"></div>
+    <div class="particle" style="top:50%;left:15%;animation-delay:1.8s;width:4px;height:4px;opacity:.25"></div>
+    <div class="particle" style="top:40%;right:18%;animation-delay:2.1s;width:6px;height:6px;opacity:.2"></div>
+    <div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:20px">
+      <div class="cta-logo">Table<span>Tap</span></div>
+      <div class="cta-tag" style="font-size:28px;font-weight:600;color:rgba(255,255,255,.65);letter-spacing:-.5px;line-height:1.3">One QR code. Full control.<br/>Real-time orders and AI insights — in one platform.</div>
+      <div class="cta-feat" style="display:flex;gap:24px;margin-top:4px">
+        <div style="text-align:center"><div style="font-size:28px;margin-bottom:4px">📱</div><div style="font-size:13px;font-weight:600;color:#fff">QR Ordering</div><div style="font-size:11px;color:rgba(255,255,255,.45)">Zero friction</div></div>
+        <div style="color:rgba(255,255,255,.15);font-size:28px;line-height:1.6">·</div>
+        <div style="text-align:center"><div style="font-size:28px;margin-bottom:4px">📊</div><div style="font-size:13px;font-weight:600;color:#fff">Live Dashboard</div><div style="font-size:11px;color:rgba(255,255,255,.45)">Real-time orders</div></div>
+        <div style="color:rgba(255,255,255,.15);font-size:28px;line-height:1.6">·</div>
+        <div style="text-align:center"><div style="font-size:28px;margin-bottom:4px">🧠</div><div style="font-size:13px;font-weight:600;color:#fff">AI Insights</div><div style="font-size:11px;color:rgba(255,255,255,.45)">Know what works</div></div>
+        <div style="color:rgba(255,255,255,.15);font-size:28px;line-height:1.6">·</div>
+        <div style="text-align:center"><div style="font-size:28px;margin-bottom:4px">💵</div><div style="font-size:13px;font-weight:600;color:#fff">Flexible Payments</div><div style="font-size:11px;color:rgba(255,255,255,.45)">Online &amp; cash</div></div>
+      </div>
+      <div class="cta-pill" style="margin-top:8px;font-size:16px;padding:14px 32px">🚀 &nbsp;Start your free demo at <b>tabletap.dev</b></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════  END SCENES  ═══════════════════════════════════════════ -->
+  <div id="prog"></div>
+
+  <!-- Play overlay -->
+  <div id="play">
+    <div class="play-ring" onclick="startVideo()">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    </div>
+    <p>Click to play &nbsp;·&nbsp; ~100 seconds</p>
+    <p style="font-size:12px;margin-top:4px;color:rgba(255,255,255,.3)">TableTap Product Demo Video</p>
+  </div>
+
+  <!-- Scene counter -->
+  <div id="scene-label" style="position:absolute;top:16px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.5);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:4px 14px;font-size:12px;color:rgba(255,255,255,.55);letter-spacing:.3px;z-index:50;opacity:0;transition:opacity .3s"></div>
+</div>
+
+<script>
+// ───────────────────────────────────────────
+// SCALING
+// ───────────────────────────────────────────
+function scaleStage() {
+  const stage = document.getElementById('stage');
+  const sx = window.innerWidth / 1280;
+  const sy = window.innerHeight / 720;
+  const s = Math.min(sx, sy);
+  stage.style.transform = `scale(${s})`;
+  stage.style.marginLeft = ((window.innerWidth - 1280) / 2) + 'px';
+  stage.style.marginTop = ((window.innerHeight - 720) / 2) + 'px';
+}
+scaleStage();
+window.addEventListener('resize', scaleStage);
+
+// ───────────────────────────────────────────
+// HEATMAP BUILD
+// ───────────────────────────────────────────
+(function buildHeatmap() {
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const hours = 13;
+  // Intensity pattern: lunch peak 12-2pm (hrs 1-3), dinner peak 7-10pm (hrs 8-11)
+  const pattern = [
+    [.05,.2,.35,.25,.1,.05,.05,.12,.3,.55,.65,.4,.15], // Mon
+    [.05,.18,.3,.22,.08,.05,.05,.1,.28,.5,.6,.38,.12],  // Tue
+    [.05,.2,.32,.24,.08,.05,.06,.12,.32,.55,.62,.4,.14], // Wed
+    [.05,.22,.35,.26,.1,.06,.06,.14,.35,.6,.68,.45,.16], // Thu
+    [.08,.28,.4,.3,.12,.08,.1,.18,.4,.65,.75,.5,.2],     // Fri
+    [.1,.35,.5,.42,.2,.12,.14,.22,.5,.75,.88,.7,.35],    // Sat
+    [.1,.32,.48,.4,.18,.1,.12,.2,.48,.72,.95,.78,.38],   // Sun
+  ];
+  const grid = document.getElementById('heatmap-grid');
+  let delay = 0.9;
+  pattern.forEach((row, di) => {
+    const rowEl = document.createElement('div');
+    rowEl.className = 'hm-row';
+    row.forEach((intensity, hi) => {
+      const cell = document.createElement('div');
+      cell.className = 'hm-cell';
+      const alpha = intensity < 0.05 ? 0.06 : Math.min(0.95, intensity * 0.9 + 0.08);
+      cell.style.background = intensity < 0.05 ? 'rgba(255,255,255,.04)' : `rgba(16,185,129,${alpha.toFixed(2)})`;
+      cell.style.animationDelay = delay.toFixed(2) + 's';
+      delay += 0.015;
+      rowEl.appendChild(cell);
+    });
+    grid.appendChild(rowEl);
+  });
+})();
+
+// ───────────────────────────────────────────
+// SCENE SYSTEM
+// ───────────────────────────────────────────
+const SCENES = [
+  { id: 's1', from: 0,    to: 8,    label: 'The Problem',          sub: 'What cafés deal with every day' },
+  { id: 's2', from: 7.5,  to: 15,   label: 'TableTap',             sub: 'QR Ordering · Live Dashboard · AI Insights' },
+  { id: 's3', from: 14.5, to: 27,   label: 'QR Ordering',          sub: 'One scan. The whole menu. No app.' },
+  { id: 's4', from: 26.5, to: 39,   label: 'Beautiful Menus',      sub: 'Always up to date · Search & filter' },
+  { id: 's5', from: 38.5, to: 51,   label: 'Flexible Payments',    sub: 'Online payments or cash — their choice' },
+  { id: 's6', from: 50.5, to: 63,   label: 'Instant Notification', sub: 'Kitchen gets the order. Immediately.' },
+  { id: 's7', from: 62.5, to: 75,   label: 'Live Order Board',     sub: 'Your entire floor, one dashboard' },
+  { id: 's8', from: 74.5, to: 91,   label: 'AI-Powered Insights',  sub: 'Peak hours · Bestsellers · Weekly trends' },
+  { id: 's9', from: 90.5, to: 101,  label: 'TableTap',             sub: 'The smarter way to run your café' },
+];
+const TOTAL = 101;
+let startTs = null;
+let running = false;
+let activeScene = null;
+
+function startVideo() {
+  document.getElementById('play').style.display = 'none';
+  document.getElementById('scene-label').style.opacity = '1';
+  running = true;
+  startTs = null;
+  requestAnimationFrame(tick);
+}
+
+function tick(ts) {
+  if (!startTs) startTs = ts;
+  const elapsed = (ts - startTs) / 1000;
+  document.getElementById('prog').style.width = Math.min(elapsed / TOTAL * 100, 100) + '%';
+  updateScenes(elapsed);
+  triggerInSceneAnimations(elapsed);
+  if (elapsed < TOTAL) requestAnimationFrame(tick);
+  else endVideo();
+}
+
+function updateScenes(t) {
+  SCENES.forEach(s => {
+    const el = document.getElementById(s.id);
+    if (!el) return;
+    const shouldBeActive = t >= s.from && t < s.to;
+    if (shouldBeActive && !el.classList.contains('active')) {
+      el.classList.add('active');
+      updateLabel(s.label, s.sub);
+    } else if (!shouldBeActive && el.classList.contains('active')) {
+      el.classList.remove('active');
+    }
+  });
+}
+
+function updateLabel(h, p) {
+  const el = document.getElementById('scene-label');
+  el.textContent = h + ' · ' + p;
+}
+
+// In-scene JavaScript-driven animations
+let s5Phase = 0;
+let s5Started = false;
+
+function triggerInSceneAnimations(t) {
+  // Scene 5: checkout → success phone transition
+  const s5 = SCENES.find(s => s.id === 's5');
+  if (t >= s5.from && t < s5.to) {
+    const elapsed5 = t - s5.from;
+    if (elapsed5 > 4 && !s5Started) {
+      s5Started = true;
+      // Flash the cash button
+      const cashBtn = document.getElementById('cash-btn');
+      if (cashBtn) {
+        cashBtn.style.transition = 'background .2s, color .2s';
+        cashBtn.style.background = '#2F5016';
+        cashBtn.style.color = '#fff';
+        setTimeout(() => {
+          const sp = document.getElementById('success-phone');
+          const cp = document.getElementById('checkout-phone');
+          if (sp && cp) {
+            cp.style.transition = 'opacity .4s';
+            cp.style.opacity = '0';
+            setTimeout(() => {
+              cp.style.display = 'none';
+              sp.style.transition = 'opacity .4s';
+              sp.style.opacity = '1';
+            }, 400);
+          }
+        }, 600);
+      }
+    }
+  } else {
+    // Reset scene 5
+    s5Started = false;
+    const cp = document.getElementById('checkout-phone');
+    const sp = document.getElementById('success-phone');
+    if (cp) { cp.style.display = ''; cp.style.opacity = '1'; }
+    if (sp) { sp.style.opacity = '0'; }
+    const cashBtn = document.getElementById('cash-btn');
+    if (cashBtn) { cashBtn.style.background = ''; cashBtn.style.color = ''; }
+  }
+}
+
+function endVideo() {
+  running = false;
+  setTimeout(() => {
+    // Show replay option
+    const overlay = document.getElementById('play');
+    overlay.style.display = 'flex';
+    overlay.querySelector('p').textContent = 'Click to replay';
+    overlay.querySelector('.play-ring').onclick = () => {
+      overlay.style.display = 'none';
+      // Reset all scenes
+      SCENES.forEach(s => document.getElementById(s.id)?.classList.remove('active'));
+      document.getElementById('prog').style.width = '0';
+      s5Started = false;
+      running = true;
+      startTs = null;
+      requestAnimationFrame(tick);
+    };
+  }, 1200);
+}
+</script>
+</body>
+</html>

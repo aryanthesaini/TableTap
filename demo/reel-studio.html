@@ -1,0 +1,2950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TableTap Reel Studio</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d0d0d;
+    --sidebar: #111;
+    --panel: #161616;
+    --input: #1e1e1e;
+    --border: rgba(255,255,255,0.1);
+    --text: #f5f5f5;
+    --muted: rgba(255,255,255,0.5);
+    --accent: #34d399;
+    --red: #ef4444;
+    --amber: #f59e0b;
+  }
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+    overflow: hidden;
+  }
+  .app {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    height: 100vh;
+  }
+  /* ----- Sidebar ----- */
+  .sidebar {
+    background: var(--sidebar);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .brand {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-logo {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), #10b981);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: #042f1f;
+    font-size: 14px;
+  }
+  .brand-name { font-size: 15px; font-weight: 600; letter-spacing: 0.2px; }
+  .brand-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    flex: 1;
+    padding: 12px 6px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .tab:hover { color: #ddd; }
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .tab-panels {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .tab-panels::-webkit-scrollbar { width: 8px; }
+  .tab-panels::-webkit-scrollbar-track { background: transparent; }
+  .tab-panels::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
+  .panel {
+    padding: 18px 20px;
+    display: none;
+  }
+  .panel.active { display: block; }
+  .ctl {
+    margin-bottom: 16px;
+  }
+  .ctl-label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  input[type="text"], input[type="number"], select, textarea {
+    width: 100%;
+    background: var(--input);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+  }
+  textarea {
+    resize: vertical;
+    min-height: 44px;
+  }
+  input[type="color"] {
+    width: 100%;
+    height: 34px;
+    background: var(--input);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 2px;
+  }
+  input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    background: transparent;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    background: #2a2a2a;
+    border-radius: 2px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    background: var(--accent);
+    border-radius: 50%;
+    margin-top: -5px;
+    cursor: pointer;
+  }
+  .row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .row > * { flex: 1; }
+  .range-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .range-row input[type="range"] { flex: 1; }
+  .range-val {
+    font-size: 12px;
+    color: var(--muted);
+    min-width: 36px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Toggle */
+  .toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 13px;
+  }
+  .switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: #333;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex: 0 0 auto;
+  }
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left 0.15s;
+  }
+  .switch.on { background: var(--accent); }
+  .switch.on::after { left: 18px; }
+
+  /* Scenes list */
+  .scene-item {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: var(--panel);
+    overflow: hidden;
+  }
+  .scene-item.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.3);
+  }
+  .scene-head {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    cursor: pointer;
+    gap: 8px;
+  }
+  .scene-head:hover { background: rgba(255,255,255,0.03); }
+  .scene-num {
+    width: 22px; height: 22px;
+    background: #222;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    color: var(--muted);
+    flex: 0 0 auto;
+  }
+  .scene-item.active .scene-num {
+    background: var(--accent);
+    color: #042f1f;
+    font-weight: 700;
+  }
+  .scene-title {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .scene-dur {
+    font-size: 11px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .scene-caret {
+    color: var(--muted);
+    font-size: 10px;
+    transition: transform 0.15s;
+  }
+  .scene-item.expanded .scene-caret { transform: rotate(90deg); }
+  .scene-body {
+    padding: 0 12px 12px;
+    display: none;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+  }
+  .scene-item.expanded .scene-body { display: block; }
+
+  /* Export */
+  .btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--input);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: #262626; }
+  .btn-primary {
+    background: var(--accent);
+    color: #042f1f;
+    border-color: var(--accent);
+  }
+  .btn-primary:hover { background: #10b981; }
+  .btn-record {
+    background: var(--red);
+    color: #fff;
+    border-color: var(--red);
+  }
+  .btn-record:hover { background: #dc2626; }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .progress {
+    margin-top: 10px;
+    height: 6px;
+    background: #222;
+    border-radius: 3px;
+    overflow: hidden;
+    display: none;
+  }
+  .progress-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--red);
+    transition: width 0.1s linear;
+  }
+  .note {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+    padding: 10px;
+    background: var(--panel);
+    border-radius: 6px;
+    margin-top: 10px;
+  }
+
+  /* Main */
+  .main {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    overflow: hidden;
+  }
+  .canvas-wrap {
+    position: relative;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 24px;
+  }
+  canvas.stage {
+    background: #06060f;
+    border-radius: 24px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+    max-height: calc(100vh - 160px);
+    display: block;
+  }
+  .transport {
+    width: 100%;
+    max-width: 780px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #0a0a0a;
+    border-top: 1px solid var(--border);
+  }
+  .tbtn {
+    width: 36px; height: 36px;
+    background: var(--input);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .tbtn:hover { background: #262626; }
+  .tbtn.play {
+    background: var(--accent);
+    color: #042f1f;
+    border-color: var(--accent);
+    font-size: 16px;
+  }
+  .tbtn.play:hover { background: #10b981; }
+
+  .scrub-wrap {
+    flex: 1;
+    position: relative;
+    height: 24px;
+    display: flex;
+    align-items: center;
+  }
+  .scrub {
+    width: 100%;
+    -webkit-appearance: none;
+    background: transparent;
+    height: 8px;
+  }
+  .scrub::-webkit-slider-runnable-track {
+    height: 4px;
+    background: #2a2a2a;
+    border-radius: 2px;
+  }
+  .scrub::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    background: var(--accent);
+    border-radius: 50%;
+    margin-top: -5px;
+    cursor: pointer;
+  }
+  .markers {
+    position: absolute;
+    left: 0; right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 10px;
+    pointer-events: none;
+  }
+  .marker {
+    position: absolute;
+    top: 2px;
+    width: 2px;
+    height: 6px;
+    background: rgba(255,255,255,0.3);
+  }
+  .time {
+    font-size: 12px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    min-width: 76px;
+    text-align: right;
+  }
+  .hint {
+    position: absolute;
+    bottom: 12px; left: 20px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.3);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-logo">TT</div>
+      <div>
+        <div class="brand-name">TableTap Reel Studio</div>
+        <div class="brand-sub">Create a 50s product reel</div>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="scenes">Scenes</button>
+      <button class="tab" data-tab="style">Style</button>
+      <button class="tab" data-tab="audio">Audio</button>
+      <button class="tab" data-tab="export">Export</button>
+    </div>
+    <div class="tab-panels">
+      <div class="panel active" data-panel="scenes" id="scenesPanel"></div>
+      <div class="panel" data-panel="style">
+        <div class="ctl">
+          <label class="ctl-label">Brand Color</label>
+          <input type="color" id="brandColor" value="#2F5016" />
+        </div>
+        <div class="ctl">
+          <label class="ctl-label">Accent Color</label>
+          <input type="color" id="accentColor" value="#34d399" />
+        </div>
+        <div class="ctl">
+          <label class="ctl-label">Background</label>
+          <select id="bgType">
+            <option value="dark-particles">Dark Particles</option>
+            <option value="dark-grid">Dark Grid</option>
+            <option value="solid">Solid</option>
+            <option value="gradient">Gradient</option>
+          </select>
+        </div>
+        <div class="ctl">
+          <label class="ctl-label">3D Intensity</label>
+          <div class="range-row">
+            <input type="range" id="tilt3D" min="0" max="100" value="40" />
+            <span class="range-val" id="tilt3DVal">40</span>
+          </div>
+        </div>
+        <div class="ctl">
+          <label class="ctl-label">Zoom Intensity</label>
+          <div class="range-row">
+            <input type="range" id="zoomIntensity" min="100" max="200" value="160" />
+            <span class="range-val" id="zoomIntensityVal">160%</span>
+          </div>
+        </div>
+        <div class="ctl">
+          <label class="ctl-label">Text Style</label>
+          <select id="textStyle">
+            <option value="white">White</option>
+            <option value="gradient">Gradient</option>
+            <option value="outline">Outline</option>
+          </select>
+        </div>
+      </div>
+      <div class="panel" data-panel="audio">
+        <div class="ctl">
+          <label class="ctl-label">Sound Effects</label>
+          <div class="toggle"><span>Whoosh (transitions)</span><div class="switch on" data-sfx="whoosh"></div></div>
+          <div class="toggle"><span>Tap (buttons)</span><div class="switch on" data-sfx="tap"></div></div>
+          <div class="toggle"><span>Chime (success)</span><div class="switch on" data-sfx="chime"></div></div>
+          <div class="toggle"><span>Notification ping</span><div class="switch on" data-sfx="ping"></div></div>
+        </div>
+        <div class="ctl">
+          <label class="ctl-label">SFX Volume</label>
+          <div class="range-row">
+            <input type="range" id="sfxVol" min="0" max="100" value="70" />
+            <span class="range-val" id="sfxVolVal">70</span>
+          </div>
+        </div>
+        <div class="ctl">
+          <label class="ctl-label">Background Music</label>
+          <div class="toggle"><span>Ambient pad</span><div class="switch" data-sfx="bgm"></div></div>
+        </div>
+        <div class="note">Audio is synthesized on the fly via Web Audio API. Nothing is downloaded. SFX play in the preview; for export, use screen recording or re-record audio in your editor.</div>
+      </div>
+      <div class="panel" data-panel="export">
+        <div class="ctl">
+          <label class="ctl-label">Resolution</label>
+          <select id="exportRes">
+            <option value="405x720">405 × 720 (preview)</option>
+            <option value="540x960">540 × 960 (SD)</option>
+            <option value="1080x1920" selected>1080 × 1920 (HD)</option>
+          </select>
+        </div>
+        <div class="ctl">
+          <label class="ctl-label">Frame Rate</label>
+          <select id="exportFps">
+            <option value="24">24 fps</option>
+            <option value="30" selected>30 fps</option>
+            <option value="60">60 fps</option>
+          </select>
+        </div>
+        <div class="ctl">
+          <button class="btn btn-record" id="recordBtn">Record and Export</button>
+          <div class="progress" id="progress"><div class="progress-bar" id="progressBar"></div></div>
+        </div>
+        <div class="ctl">
+          <button class="btn btn-primary" id="downloadBtn" disabled>Download</button>
+        </div>
+        <div class="note">
+          Safari records .mp4 · Chrome records .webm. Upload directly to Instagram or TikTok, or convert at cloudconvert.com for compatibility.
+        </div>
+      </div>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="canvas-wrap">
+      <canvas class="stage" id="stage" width="405" height="720"></canvas>
+    </div>
+    <div class="transport">
+      <button class="tbtn" id="restartBtn" title="Restart">&larr;</button>
+      <button class="tbtn play" id="playBtn" title="Play">&#9654;</button>
+      <div class="scrub-wrap">
+        <input type="range" class="scrub" id="scrub" min="0" max="1000" value="0" />
+        <div class="markers" id="markers"></div>
+      </div>
+      <div class="time" id="time">0:00 / 0:50</div>
+    </div>
+    <div class="hint">TableTap Reel Studio - 9:16 portrait, 50s product reel</div>
+  </main>
+</div>
+
+<script>
+// ============================================================
+// TableTap Reel Studio - Core Configuration
+// ============================================================
+const cfg = {
+  brandColor: '#2F5016',
+  accentColor: '#34d399',
+  bgType: 'dark-particles',
+  tilt3D: 0.4,
+  zoom: 1.6,
+  textStyle: 'white',
+  sfx: { whoosh: true, tap: true, chime: true, ping: true, bgm: false },
+  sfxVol: 0.7,
+  scenes: [
+    { id: 'hook',       start: 0,  dur: 4, head: 'Still managing orders by hand?',       caption: 'Running a cafe should not be this hard.' },
+    { id: 'brand',      start: 4,  dur: 3, head: 'TableTap',                              caption: 'One QR. Full control.' },
+    { id: 'qr',         start: 7,  dur: 7, head: 'Guests scan the table QR',              caption: 'No app. No download. Instant menu.' },
+    { id: 'menu',       start: 14, dur: 6, head: 'Beautiful mobile menu',                 caption: 'Your brand, your items, your prices.' },
+    { id: 'checkout',   start: 20, dur: 7, head: 'One-tap checkout',                      caption: 'Pay online or pay at the counter.' },
+    { id: 'notify',     start: 27, dur: 7, head: 'Orders land on your dashboard',         caption: 'Real-time alerts. No missed tickets.' },
+    { id: 'board',      start: 34, dur: 6, head: 'Live order board',                      caption: 'Serve faster with timers and one-tap status.' },
+    { id: 'insights',   start: 40, dur: 6, head: 'AI insights that grow revenue',         caption: 'Know your peak hours. Price smarter.' },
+    { id: 'cta',        start: 46, dur: 4, head: 'TableTap',                              caption: 'Start free at tabletap.dev' },
+  ],
+};
+// TOTAL is dynamic so scene-duration edits update everything.
+// We expose it as a function `TOTAL()` throughout the code.
+function TOTAL() { return cfg.scenes.reduce((a, s) => a + s.dur, 0); }
+
+// Re-calc start offsets in case durations change
+function recalcStarts() {
+  let t = 0;
+  for (const s of cfg.scenes) { s.start = t; t += s.dur; }
+}
+recalcStarts();
+
+// ============================================================
+// Canvas Setup
+// ============================================================
+const stage = document.getElementById('stage');
+const ctx = stage.getContext('2d');
+let baseW = 405, baseH = 720;
+
+// Offscreen phone-screen canvas (fixed internal resolution)
+const offW = 236, offH = 484;
+const off = document.createElement('canvas');
+off.width = offW;
+off.height = offH;
+const offCtx = off.getContext('2d');
+
+// Unit scaler - everything measured relative to base 405 width
+const u = (x) => (x * (stage.width / baseW));
+
+// ============================================================
+// Easing & Tween Helpers
+// ============================================================
+const ease = {
+  linear: t => t,
+  easeOut:  t => 1 - Math.pow(1 - t, 3),
+  easeIn:   t => t * t * t,
+  easeInOut: t => t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2,
+  easeOutBack: t => {
+    const c1 = 1.70158, c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+  },
+  easeOutElastic: t => {
+    const c4 = (2*Math.PI)/3;
+    return t === 0 ? 0 : t === 1 ? 1 :
+      Math.pow(2, -10*t) * Math.sin((t*10 - 0.75) * c4) + 1;
+  },
+};
+const clamp01 = t => Math.max(0, Math.min(1, t));
+const lerp = (a, b, t) => a + (b - a) * t;
+function tween(elapsed, start, end, easeFn = ease.easeOut) {
+  if (end <= start) return elapsed >= end ? 1 : 0;
+  return clamp01(easeFn(clamp01((elapsed - start) / (end - start))));
+}
+
+// ============================================================
+// RoundRect Polyfill
+// ============================================================
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    if (typeof r === 'number') r = [r, r, r, r];
+    else if (r.length === 1) r = [r[0], r[0], r[0], r[0]];
+    this.beginPath();
+    this.moveTo(x + r[0], y);
+    this.lineTo(x + w - r[1], y);
+    this.quadraticCurveTo(x + w, y, x + w, y + r[1]);
+    this.lineTo(x + w, y + h - r[2]);
+    this.quadraticCurveTo(x + w, y + h, x + w - r[2], y + h);
+    this.lineTo(x + r[3], y + h);
+    this.quadraticCurveTo(x, y + h, x, y + h - r[3]);
+    this.lineTo(x, y + r[0]);
+    this.quadraticCurveTo(x, y, x + r[0], y);
+    this.closePath();
+    return this;
+  };
+}
+
+// ============================================================
+// Background: particles, grid, solid, gradient
+// ============================================================
+const particles = [];
+function initParticles() {
+  particles.length = 0;
+  for (let i = 0; i < 70; i++) {
+    particles.push({
+      x: Math.random(),
+      y: Math.random(),
+      r: 0.5 + Math.random() * 1.5,
+      vx: (Math.random() - 0.5) * 0.0004,
+      vy: (Math.random() - 0.5) * 0.0004,
+      a: 0.2 + Math.random() * 0.5,
+    });
+  }
+}
+initParticles();
+
+function drawBackground(ctx, elapsed, w, h) {
+  if (cfg.bgType === 'solid') {
+    ctx.fillStyle = '#06060f';
+    ctx.fillRect(0, 0, w, h);
+    return;
+  }
+  if (cfg.bgType === 'gradient') {
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#0f172a');
+    g.addColorStop(1, '#042f1f');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    return;
+  }
+  // dark-particles or dark-grid (both have dark base)
+  ctx.fillStyle = '#06060f';
+  ctx.fillRect(0, 0, w, h);
+
+  // Faint radial glow
+  const grad = ctx.createRadialGradient(w/2, h*0.4, 0, w/2, h*0.4, h*0.7);
+  grad.addColorStop(0, hexA(cfg.brandColor, 0.18));
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  if (cfg.bgType === 'dark-grid') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    const gap = u(40);
+    for (let x = 0; x < w; x += gap) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+    for (let y = 0; y < h; y += gap) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    return;
+  }
+  // particles
+  for (const p of particles) {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = 1; if (p.x > 1) p.x = 0;
+    if (p.y < 0) p.y = 1; if (p.y > 1) p.y = 0;
+    ctx.fillStyle = hexA(cfg.accentColor, p.a * 0.5);
+    ctx.beginPath();
+    ctx.arc(p.x * w, p.y * h, u(p.r), 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ============================================================
+// Color Helpers
+// ============================================================
+function hexA(hex, a) {
+  const h = hex.replace('#','');
+  const r = parseInt(h.substring(0,2),16);
+  const g = parseInt(h.substring(2,4),16);
+  const b = parseInt(h.substring(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function lighten(hex, amt) {
+  const h = hex.replace('#','');
+  const r = Math.min(255, parseInt(h.substring(0,2),16) + amt);
+  const g = Math.min(255, parseInt(h.substring(2,4),16) + amt);
+  const b = Math.min(255, parseInt(h.substring(4,6),16) + amt);
+  return `rgb(${r},${g},${b})`;
+}
+
+// ============================================================
+// Text drawing helpers
+// ============================================================
+function fillTextStyled(ctx, text, x, y, size, opts = {}) {
+  ctx.save();
+  ctx.font = `${opts.weight || 700} ${size}px -apple-system, 'Inter', sans-serif`;
+  ctx.textAlign = opts.align || 'center';
+  ctx.textBaseline = opts.baseline || 'middle';
+  const style = opts.style || cfg.textStyle;
+  if (style === 'gradient') {
+    const g = ctx.createLinearGradient(x, y - size, x, y + size);
+    g.addColorStop(0, '#ffffff');
+    g.addColorStop(1, cfg.accentColor);
+    ctx.fillStyle = g;
+    ctx.fillText(text, x, y);
+  } else if (style === 'outline') {
+    ctx.lineWidth = Math.max(2, size * 0.06);
+    ctx.strokeStyle = '#000';
+    ctx.strokeText(text, x, y);
+    ctx.fillStyle = opts.color || '#fff';
+    ctx.fillText(text, x, y);
+  } else {
+    if (opts.shadow !== false) {
+      ctx.shadowColor = 'rgba(0,0,0,0.6)';
+      ctx.shadowBlur = size * 0.2;
+    }
+    ctx.fillStyle = opts.color || '#fff';
+    ctx.fillText(text, x, y);
+  }
+  ctx.restore();
+}
+
+// Word wrap
+function wrapLines(ctx, text, maxWidth, font) {
+  ctx.save();
+  ctx.font = font;
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = w;
+    } else {
+      line = test;
+    }
+  }
+  if (line) lines.push(line);
+  ctx.restore();
+  return lines;
+}
+
+// ============================================================
+// Phone screen - offscreen renderers
+// ============================================================
+function clearOff() {
+  offCtx.fillStyle = '#f7f7f8';
+  offCtx.fillRect(0, 0, offW, offH);
+}
+
+// --- QR screen (scan landing) ---
+function drawQRScreen(progress) {
+  clearOff();
+  // Header - "Welcome to Woodpecker"
+  offCtx.fillStyle = cfg.brandColor;
+  offCtx.fillRect(0, 0, offW, 70);
+  offCtx.fillStyle = '#fff';
+  offCtx.font = 'bold 16px -apple-system, sans-serif';
+  offCtx.textAlign = 'center';
+  offCtx.textBaseline = 'middle';
+  offCtx.fillText('Woodpecker Cafe', offW/2, 28);
+  offCtx.font = '11px -apple-system, sans-serif';
+  offCtx.globalAlpha = 0.85;
+  offCtx.fillText('Welcome - Table 3', offW/2, 48);
+  offCtx.globalAlpha = 1;
+
+  // "Loading menu..."
+  offCtx.fillStyle = '#9ca3af';
+  offCtx.font = '12px -apple-system, sans-serif';
+  offCtx.fillText('Loading menu...', offW/2, 100);
+
+  // Skeleton cards
+  const sk = ['#e5e7eb', '#e5e7eb', '#e5e7eb'];
+  let y = 130;
+  for (let i = 0; i < 4; i++) {
+    offCtx.fillStyle = sk[i % sk.length];
+    offCtx.roundRect(16, y, offW - 32, 56, 8);
+    offCtx.fill();
+    y += 66;
+  }
+
+  // Progress spinner at bottom
+  offCtx.save();
+  offCtx.translate(offW/2, offH - 60);
+  offCtx.strokeStyle = cfg.brandColor;
+  offCtx.lineWidth = 3;
+  offCtx.lineCap = 'round';
+  offCtx.beginPath();
+  const a = (progress * Math.PI * 4) % (Math.PI * 2);
+  offCtx.arc(0, 0, 14, a, a + Math.PI * 1.3);
+  offCtx.stroke();
+  offCtx.restore();
+}
+
+// --- Menu screen ---
+function drawMenuScreen(progress, zoomItem = -1) {
+  clearOff();
+  // Green header
+  offCtx.fillStyle = cfg.brandColor;
+  offCtx.fillRect(0, 0, offW, 88);
+  // Lighter green gradient top
+  const g = offCtx.createLinearGradient(0, 0, 0, 88);
+  g.addColorStop(0, lighten(cfg.brandColor, 20));
+  g.addColorStop(1, cfg.brandColor);
+  offCtx.fillStyle = g;
+  offCtx.fillRect(0, 0, offW, 88);
+
+  // Restaurant name
+  offCtx.fillStyle = '#fff';
+  offCtx.font = 'bold 15px -apple-system, sans-serif';
+  offCtx.textAlign = 'left';
+  offCtx.textBaseline = 'alphabetic';
+  offCtx.fillText('Woodpecker Cafe', 14, 28);
+  offCtx.font = '10px -apple-system, sans-serif';
+  offCtx.globalAlpha = 0.85;
+  offCtx.fillText('Korean Fusion - Cafe', 14, 44);
+  offCtx.globalAlpha = 1;
+
+  // Table 3 chip
+  offCtx.fillStyle = 'rgba(255,255,255,0.2)';
+  offCtx.roundRect(14, 56, 68, 22, 11);
+  offCtx.fill();
+  offCtx.fillStyle = '#fff';
+  offCtx.font = 'bold 10px -apple-system, sans-serif';
+  offCtx.textAlign = 'center';
+  offCtx.textBaseline = 'middle';
+  offCtx.fillText('Table 3', 48, 67);
+
+  // Cart icon on right
+  offCtx.fillStyle = 'rgba(255,255,255,0.15)';
+  offCtx.beginPath();
+  offCtx.arc(offW - 24, 32, 14, 0, Math.PI*2);
+  offCtx.fill();
+  offCtx.fillStyle = '#fff';
+  offCtx.font = '14px -apple-system, sans-serif';
+  offCtx.textAlign = 'center';
+  offCtx.fillText('@', offW - 24, 36);
+
+  // Category tabs
+  const cats = ["Chef's Specials", 'Korean', 'Pizza', 'Sushi', 'Drinks'];
+  let x = 14;
+  offCtx.textBaseline = 'middle';
+  for (let i = 0; i < cats.length; i++) {
+    offCtx.font = i === 0 ? 'bold 11px -apple-system, sans-serif' : '11px -apple-system, sans-serif';
+    const w = offCtx.measureText(cats[i]).width + 16;
+    if (i === 0) {
+      offCtx.fillStyle = cfg.brandColor;
+      offCtx.roundRect(x, 100, w, 26, 13);
+      offCtx.fill();
+      offCtx.fillStyle = '#fff';
+    } else {
+      offCtx.fillStyle = '#f3f4f6';
+      offCtx.roundRect(x, 100, w, 26, 13);
+      offCtx.fill();
+      offCtx.fillStyle = '#374151';
+    }
+    offCtx.textAlign = 'center';
+    offCtx.fillText(cats[i], x + w/2, 113);
+    x += w + 6;
+  }
+
+  // Items
+  const items = [
+    { name: 'Carbonara Ramyun', badge: 'Bestseller', price: 220, desc: 'Creamy Korean-Italian fusion noodles' },
+    { name: 'Spicy Tuna Pizza',  badge: 'New',        price: 320, desc: 'Fresh tuna, kimchi aioli, wood-fired crust' },
+    { name: 'Rainbow Roll',      badge: '',           price: 280, desc: 'Avocado, cucumber, tuna, salmon, prawn' },
+    { name: 'Green Apple Mojito',badge: 'Chef pick',  price: 150, desc: 'Fresh mint, apple juice, lime' },
+  ];
+  let y0 = 140;
+  for (let i = 0; i < items.length; i++) {
+    const it = items[i];
+    const yy = y0 + i * 86;
+
+    // Card
+    offCtx.fillStyle = '#fff';
+    offCtx.strokeStyle = '#eceef1';
+    offCtx.lineWidth = 1;
+    offCtx.roundRect(12, yy, offW - 24, 78, 10);
+    offCtx.fill();
+    offCtx.stroke();
+
+    // Image placeholder
+    offCtx.fillStyle = '#f3f4f6';
+    offCtx.roundRect(20, yy + 10, 58, 58, 8);
+    offCtx.fill();
+    // Icon circle
+    offCtx.fillStyle = hexA(cfg.brandColor, 0.1);
+    offCtx.beginPath();
+    offCtx.arc(49, yy + 39, 18, 0, Math.PI * 2);
+    offCtx.fill();
+    offCtx.fillStyle = cfg.brandColor;
+    offCtx.font = 'bold 16px -apple-system, sans-serif';
+    offCtx.textAlign = 'center';
+    offCtx.textBaseline = 'middle';
+    offCtx.fillText(it.name.charAt(0), 49, yy + 39);
+
+    // VEG dot
+    offCtx.strokeStyle = '#16a34a';
+    offCtx.lineWidth = 1.5;
+    offCtx.strokeRect(88, yy + 10, 9, 9);
+    offCtx.fillStyle = '#16a34a';
+    offCtx.beginPath();
+    offCtx.arc(92.5, yy + 14.5, 2.2, 0, Math.PI * 2);
+    offCtx.fill();
+
+    // Name
+    offCtx.fillStyle = '#111827';
+    offCtx.font = 'bold 12px -apple-system, sans-serif';
+    offCtx.textAlign = 'left';
+    offCtx.textBaseline = 'alphabetic';
+    offCtx.fillText(it.name, 102, yy + 20);
+
+    // Badge
+    if (it.badge) {
+      offCtx.font = 'bold 8px -apple-system, sans-serif';
+      const bw = offCtx.measureText(it.badge).width + 10;
+      offCtx.fillStyle = hexA(cfg.accentColor, 0.2);
+      offCtx.roundRect(102, yy + 26, bw, 14, 7);
+      offCtx.fill();
+      offCtx.fillStyle = '#047857';
+      offCtx.textBaseline = 'middle';
+      offCtx.textAlign = 'center';
+      offCtx.fillText(it.badge, 102 + bw/2, yy + 33);
+    }
+
+    // Description
+    offCtx.fillStyle = '#6b7280';
+    offCtx.font = '9px -apple-system, sans-serif';
+    offCtx.textAlign = 'left';
+    offCtx.textBaseline = 'alphabetic';
+    offCtx.fillText(it.desc.slice(0, 32) + (it.desc.length > 32 ? '...' : ''), 102, yy + 54);
+
+    // Price
+    offCtx.fillStyle = '#111827';
+    offCtx.font = 'bold 13px -apple-system, sans-serif';
+    offCtx.fillText('Rs ' + it.price, 102, yy + 70);
+
+    // + Add button
+    offCtx.fillStyle = cfg.brandColor;
+    offCtx.roundRect(offW - 54, yy + 50, 40, 22, 11);
+    offCtx.fill();
+    offCtx.fillStyle = '#fff';
+    offCtx.font = 'bold 10px -apple-system, sans-serif';
+    offCtx.textAlign = 'center';
+    offCtx.textBaseline = 'middle';
+    offCtx.fillText('+ Add', offW - 34, yy + 61);
+
+    // Highlight zoomed item
+    if (zoomItem === i) {
+      offCtx.strokeStyle = cfg.accentColor;
+      offCtx.lineWidth = 2;
+      offCtx.roundRect(12, yy, offW - 24, 78, 10);
+      offCtx.stroke();
+    }
+  }
+}
+
+// --- Checkout screen ---
+function drawCheckoutScreen(progress, payState = 0, tapPos = null) {
+  clearOff();
+  // Header
+  offCtx.fillStyle = '#fff';
+  offCtx.fillRect(0, 0, offW, 54);
+  offCtx.strokeStyle = '#e5e7eb';
+  offCtx.lineWidth = 1;
+  offCtx.beginPath(); offCtx.moveTo(0, 54); offCtx.lineTo(offW, 54); offCtx.stroke();
+
+  offCtx.fillStyle = '#111827';
+  offCtx.font = 'bold 18px -apple-system, sans-serif';
+  offCtx.textAlign = 'left';
+  offCtx.textBaseline = 'middle';
+  offCtx.fillText('<', 16, 28);
+  offCtx.font = 'bold 14px -apple-system, sans-serif';
+  offCtx.textAlign = 'center';
+  offCtx.fillText('Your Order', offW/2, 28);
+
+  // Items
+  const items = [
+    { q: 2, name: 'Carbonara Ramyun', price: 440 },
+    { q: 1, name: 'Chocolate Brownie', price: 120 },
+    { q: 1, name: 'Green Apple Mojito', price: 150 },
+  ];
+  let y = 70;
+  offCtx.textBaseline = 'alphabetic';
+  for (const it of items) {
+    offCtx.fillStyle = '#fff';
+    offCtx.roundRect(14, y, offW - 28, 44, 8);
+    offCtx.fill();
+    offCtx.strokeStyle = '#eceef1';
+    offCtx.lineWidth = 1;
+    offCtx.stroke();
+
+    // Qty pill
+    offCtx.fillStyle = hexA(cfg.brandColor, 0.1);
+    offCtx.roundRect(22, y + 12, 22, 20, 10);
+    offCtx.fill();
+    offCtx.fillStyle = cfg.brandColor;
+    offCtx.font = 'bold 11px -apple-system, sans-serif';
+    offCtx.textAlign = 'center';
+    offCtx.textBaseline = 'middle';
+    offCtx.fillText(it.q + 'x', 33, y + 22);
+
+    offCtx.fillStyle = '#111827';
+    offCtx.font = 'bold 12px -apple-system, sans-serif';
+    offCtx.textAlign = 'left';
+    offCtx.textBaseline = 'middle';
+    offCtx.fillText(it.name, 52, y + 22);
+
+    offCtx.font = 'bold 12px -apple-system, sans-serif';
+    offCtx.textAlign = 'right';
+    offCtx.fillText('Rs ' + it.price, offW - 22, y + 22);
+    y += 50;
+  }
+
+  // Totals
+  y += 6;
+  const totals = [
+    ['Subtotal', 'Rs 710.00', '#6b7280'],
+    ['GST (5%)', 'Rs 35.50',  '#6b7280'],
+    ['Total',    'Rs 745.50', '#111827'],
+  ];
+  offCtx.textBaseline = 'middle';
+  for (let i = 0; i < totals.length; i++) {
+    const [k, v, col] = totals[i];
+    offCtx.fillStyle = col;
+    offCtx.font = (i === 2 ? 'bold 14px' : '12px') + ' -apple-system, sans-serif';
+    offCtx.textAlign = 'left';
+    offCtx.fillText(k, 22, y);
+    offCtx.textAlign = 'right';
+    offCtx.fillText(v, offW - 22, y);
+    y += 22;
+  }
+
+  // Pay online button
+  y += 16;
+  offCtx.fillStyle = cfg.brandColor;
+  offCtx.roundRect(16, y, offW - 32, 42, 10);
+  offCtx.fill();
+  if (progress > 0.3) {
+    const pulse = 0.5 + 0.5 * Math.sin(progress * Math.PI * 8);
+    offCtx.fillStyle = hexA('#ffffff', pulse * 0.15);
+    offCtx.roundRect(16, y, offW - 32, 42, 10);
+    offCtx.fill();
+  }
+  offCtx.fillStyle = '#fff';
+  offCtx.font = 'bold 14px -apple-system, sans-serif';
+  offCtx.textAlign = 'center';
+  offCtx.textBaseline = 'middle';
+  offCtx.fillText('Pay Rs 745.50', offW/2, y + 21);
+
+  // Divider "or"
+  y += 54;
+  offCtx.strokeStyle = '#e5e7eb';
+  offCtx.lineWidth = 1;
+  offCtx.beginPath();
+  offCtx.moveTo(32, y); offCtx.lineTo(offW/2 - 16, y);
+  offCtx.moveTo(offW/2 + 16, y); offCtx.lineTo(offW - 32, y);
+  offCtx.stroke();
+  offCtx.fillStyle = '#9ca3af';
+  offCtx.font = '11px -apple-system, sans-serif';
+  offCtx.textAlign = 'center';
+  offCtx.textBaseline = 'middle';
+  offCtx.fillText('or', offW/2, y);
+
+  // Pay at counter button
+  y += 16;
+  offCtx.fillStyle = payState >= 1 ? cfg.accentColor : '#fff';
+  offCtx.strokeStyle = payState >= 1 ? cfg.accentColor : '#d1d5db';
+  offCtx.lineWidth = 1.5;
+  offCtx.roundRect(16, y, offW - 32, 42, 10);
+  offCtx.fill();
+  offCtx.stroke();
+  offCtx.fillStyle = payState >= 1 ? '#042f1f' : '#111827';
+  offCtx.font = 'bold 13px -apple-system, sans-serif';
+  offCtx.textAlign = 'center';
+  offCtx.textBaseline = 'middle';
+  offCtx.fillText(payState >= 1 ? 'Confirmed' : 'Pay at counter (Cash)', offW/2, y + 21);
+
+  // Tap indicator
+  if (tapPos) {
+    const [tx, ty, tp] = tapPos;
+    offCtx.strokeStyle = hexA(cfg.accentColor, 1 - tp);
+    offCtx.lineWidth = 2;
+    offCtx.beginPath();
+    offCtx.arc(tx, ty, 6 + tp * 28, 0, Math.PI * 2);
+    offCtx.stroke();
+    offCtx.strokeStyle = hexA('#ffffff', (1 - tp) * 0.5);
+    offCtx.beginPath();
+    offCtx.arc(tx, ty, 6 + tp * 20, 0, Math.PI * 2);
+    offCtx.stroke();
+    if (tp < 0.3) {
+      offCtx.fillStyle = hexA('#ffffff', 0.9);
+      offCtx.beginPath();
+      offCtx.arc(tx, ty, 8, 0, Math.PI * 2);
+      offCtx.fill();
+    }
+  }
+}
+
+// --- Success screen ---
+function drawSuccessScreen(progress) {
+  clearOff();
+  // Gradient background
+  const g = offCtx.createLinearGradient(0, 0, 0, offH);
+  g.addColorStop(0, '#ecfdf5');
+  g.addColorStop(1, '#fff');
+  offCtx.fillStyle = g;
+  offCtx.fillRect(0, 0, offW, offH);
+
+  // Green check circle - scale in
+  const scale = ease.easeOutBack(clamp01(progress * 2));
+  const cx = offW / 2, cy = 150;
+  const radius = 44 * scale;
+
+  offCtx.save();
+  // Outer glow
+  offCtx.shadowColor = hexA(cfg.accentColor, 0.5);
+  offCtx.shadowBlur = 30;
+  offCtx.fillStyle = cfg.accentColor;
+  offCtx.beginPath();
+  offCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+  offCtx.fill();
+  offCtx.restore();
+
+  // Check mark
+  if (progress > 0.3) {
+    const chP = clamp01((progress - 0.3) / 0.3);
+    offCtx.strokeStyle = '#fff';
+    offCtx.lineWidth = 6;
+    offCtx.lineCap = 'round';
+    offCtx.lineJoin = 'round';
+    offCtx.beginPath();
+    const p1 = [cx - 16, cy + 2];
+    const p2 = [cx - 4,  cy + 14];
+    const p3 = [cx + 18, cy - 10];
+    offCtx.moveTo(p1[0], p1[1]);
+    if (chP < 0.5) {
+      const t = chP / 0.5;
+      offCtx.lineTo(lerp(p1[0], p2[0], t), lerp(p1[1], p2[1], t));
+    } else {
+      offCtx.lineTo(p2[0], p2[1]);
+      const t = (chP - 0.5) / 0.5;
+      offCtx.lineTo(lerp(p2[0], p3[0], t), lerp(p2[1], p3[1], t));
+    }
+    offCtx.stroke();
+  }
+
+  // Confetti
+  if (progress > 0.4) {
+    const cp = clamp01((progress - 0.4) / 0.4);
+    const n = 14;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const rr = 60 + cp * 80;
+      const cxp = cx + Math.cos(a) * rr;
+      const cyp = cy + Math.sin(a) * rr - cp * 10;
+      offCtx.fillStyle = i % 2 === 0 ? cfg.accentColor : cfg.brandColor;
+      offCtx.globalAlpha = 1 - cp;
+      offCtx.fillRect(cxp - 2, cyp - 2, 5, 5);
+    }
+    offCtx.globalAlpha = 1;
+  }
+
+  // Text
+  offCtx.fillStyle = '#111827';
+  offCtx.font = 'bold 20px -apple-system, sans-serif';
+  offCtx.textAlign = 'center';
+  offCtx.textBaseline = 'middle';
+  offCtx.globalAlpha = clamp01((progress - 0.4) * 2);
+  offCtx.fillText('Order Placed!', cx, 230);
+
+  offCtx.font = '13px -apple-system, sans-serif';
+  offCtx.fillStyle = '#6b7280';
+  offCtx.fillText('Order #1382 - Table 3', cx, 258);
+  offCtx.fillText('Pay at the counter when ready', cx, 280);
+
+  // Receipt card
+  offCtx.fillStyle = '#fff';
+  offCtx.strokeStyle = '#e5e7eb';
+  offCtx.lineWidth = 1;
+  offCtx.roundRect(24, 310, offW - 48, 120, 10);
+  offCtx.fill();
+  offCtx.stroke();
+
+  offCtx.fillStyle = '#6b7280';
+  offCtx.font = '10px -apple-system, sans-serif';
+  offCtx.textAlign = 'left';
+  offCtx.textBaseline = 'alphabetic';
+  offCtx.fillText('YOUR ITEMS', 36, 330);
+
+  const items = [
+    ['2x Carbonara Ramyun', 'Rs 440'],
+    ['1x Chocolate Brownie', 'Rs 120'],
+    ['1x Green Apple Mojito', 'Rs 150'],
+  ];
+  let yy = 352;
+  for (const [n, p] of items) {
+    offCtx.fillStyle = '#374151';
+    offCtx.font = '11px -apple-system, sans-serif';
+    offCtx.textAlign = 'left';
+    offCtx.fillText(n, 36, yy);
+    offCtx.textAlign = 'right';
+    offCtx.fillText(p, offW - 36, yy);
+    yy += 18;
+  }
+  // Total
+  offCtx.strokeStyle = '#e5e7eb';
+  offCtx.beginPath();
+  offCtx.moveTo(36, yy); offCtx.lineTo(offW - 36, yy);
+  offCtx.stroke();
+  offCtx.fillStyle = '#111827';
+  offCtx.font = 'bold 12px -apple-system, sans-serif';
+  offCtx.textAlign = 'left';
+  offCtx.fillText('Total', 36, yy + 16);
+  offCtx.textAlign = 'right';
+  offCtx.fillText('Rs 745.50', offW - 36, yy + 16);
+  offCtx.globalAlpha = 1;
+}
+
+// --- Dashboard notification screen ---
+function drawDashboardScreen(progress, showNewBadge, pulseTime) {
+  // Light-grey dashboard bg
+  offCtx.fillStyle = '#f3f4f6';
+  offCtx.fillRect(0, 0, offW, offH);
+
+  // Dark sidebar
+  offCtx.fillStyle = '#111827';
+  offCtx.fillRect(0, 0, 44, offH);
+
+  // Sidebar logo
+  offCtx.fillStyle = cfg.accentColor;
+  offCtx.roundRect(10, 12, 24, 24, 6);
+  offCtx.fill();
+  offCtx.fillStyle = '#042f1f';
+  offCtx.font = 'bold 10px -apple-system, sans-serif';
+  offCtx.textAlign = 'center';
+  offCtx.textBaseline = 'middle';
+  offCtx.fillText('TT', 22, 24);
+
+  // Sidebar icons
+  const icons = ['=', '#', '$', '%', '*'];
+  for (let i = 0; i < icons.length; i++) {
+    const yy = 60 + i * 44;
+    if (i === 1) {
+      offCtx.fillStyle = hexA(cfg.accentColor, 0.15);
+      offCtx.roundRect(6, yy - 10, 32, 32, 6);
+      offCtx.fill();
+      offCtx.fillStyle = cfg.accentColor;
+    } else {
+      offCtx.fillStyle = 'rgba(255,255,255,0.4)';
+    }
+    offCtx.font = '14px -apple-system, sans-serif';
+    offCtx.fillText(icons[i], 22, yy + 6);
+  }
+
+  // Header
+  offCtx.fillStyle = '#fff';
+  offCtx.fillRect(44, 0, offW - 44, 52);
+  offCtx.fillStyle = '#111827';
+  offCtx.font = 'bold 13px -apple-system, sans-serif';
+  offCtx.textAlign = 'left';
+  offCtx.textBaseline = 'middle';
+  offCtx.fillText('Live Orders', 56, 26);
+
+  // Status dot
+  offCtx.fillStyle = cfg.accentColor;
+  offCtx.beginPath();
+  offCtx.arc(offW - 22, 26, 4, 0, Math.PI * 2);
+  offCtx.fill();
+  offCtx.fillStyle = '#6b7280';
+  offCtx.font = '9px -apple-system, sans-serif';
+  offCtx.textAlign = 'right';
+  offCtx.fillText('Live', offW - 28, 26);
+
+  // Pulsing NEW order card
+  const cardY = 72;
+  const cardH = 132;
+  const cardX = 54;
+  const cardW = offW - 66;
+
+  // Glow pulse
+  if (showNewBadge) {
+    const p = 0.5 + 0.5 * Math.sin(pulseTime * 5);
+    offCtx.save();
+    offCtx.shadowColor = hexA(cfg.accentColor, 0.6 * p);
+    offCtx.shadowBlur = 20;
+    offCtx.fillStyle = '#fff';
+    offCtx.strokeStyle = cfg.accentColor;
+    offCtx.lineWidth = 2;
+    offCtx.roundRect(cardX, cardY, cardW, cardH, 10);
+    offCtx.fill();
+    offCtx.stroke();
+    offCtx.restore();
+  } else {
+    offCtx.fillStyle = '#fff';
+    offCtx.strokeStyle = '#e5e7eb';
+    offCtx.lineWidth = 1;
+    offCtx.roundRect(cardX, cardY, cardW, cardH, 10);
+    offCtx.fill();
+    offCtx.stroke();
+  }
+
+  // NEW badge
+  if (showNewBadge) {
+    offCtx.fillStyle = cfg.accentColor;
+    offCtx.roundRect(cardX + 10, cardY + 10, 36, 16, 8);
+    offCtx.fill();
+    offCtx.fillStyle = '#042f1f';
+    offCtx.font = 'bold 9px -apple-system, sans-serif';
+    offCtx.textAlign = 'center';
+    offCtx.textBaseline = 'middle';
+    offCtx.fillText('NEW', cardX + 28, cardY + 18);
+  }
+
+  // Order number & table
+  offCtx.fillStyle = '#111827';
+  offCtx.font = 'bold 14px -apple-system, sans-serif';
+  offCtx.textAlign = 'left';
+  offCtx.textBaseline = 'alphabetic';
+  offCtx.fillText('#1382', showNewBadge ? cardX + 54 : cardX + 12, cardY + 24);
+
+  offCtx.font = '10px -apple-system, sans-serif';
+  offCtx.fillStyle = '#6b7280';
+  offCtx.fillText('Table 3 - just now', cardX + 12, cardY + 42);
+
+  // Cash label
+  offCtx.fillStyle = hexA('#f59e0b', 0.15);
+  offCtx.roundRect(cardX + cardW - 56, cardY + 10, 46, 16, 8);
+  offCtx.fill();
+  offCtx.fillStyle = '#b45309';
+  offCtx.font = 'bold 9px -apple-system, sans-serif';
+  offCtx.textAlign = 'center';
+  offCtx.textBaseline = 'middle';
+  offCtx.fillText('CASH', cardX + cardW - 33, cardY + 18);
+
+  // Divider
+  offCtx.strokeStyle = '#f3f4f6';
+  offCtx.beginPath();
+  offCtx.moveTo(cardX + 12, cardY + 52);
+  offCtx.lineTo(cardX + cardW - 12, cardY + 52);
+  offCtx.stroke();
+
+  // Items
+  const lines = ['2x Carbonara Ramyun', '1x Chocolate Brownie', '1x Green Apple Mojito'];
+  offCtx.fillStyle = '#374151';
+  offCtx.font = '10px -apple-system, sans-serif';
+  offCtx.textAlign = 'left';
+  offCtx.textBaseline = 'alphabetic';
+  for (let i = 0; i < lines.length; i++) {
+    offCtx.fillText(lines[i], cardX + 12, cardY + 70 + i * 16);
+  }
+
+  // Total
+  offCtx.fillStyle = '#111827';
+  offCtx.font = 'bold 12px -apple-system, sans-serif';
+  offCtx.textAlign = 'right';
+  offCtx.fillText('Rs 745.50', cardX + cardW - 12, cardY + 120);
+
+  // Second order card (older)
+  const c2Y = cardY + cardH + 10;
+  offCtx.fillStyle = '#fff';
+  offCtx.strokeStyle = '#e5e7eb';
+  offCtx.lineWidth = 1;
+  offCtx.roundRect(cardX, c2Y, cardW, 54, 10);
+  offCtx.fill();
+  offCtx.stroke();
+  offCtx.fillStyle = '#111827';
+  offCtx.font = 'bold 12px -apple-system, sans-serif';
+  offCtx.textAlign = 'left';
+  offCtx.fillText('#1381', cardX + 12, c2Y + 20);
+  offCtx.fillStyle = '#6b7280';
+  offCtx.font = '10px -apple-system, sans-serif';
+  offCtx.fillText('Table 5 - 3 min', cardX + 12, c2Y + 36);
+  offCtx.fillStyle = '#111827';
+  offCtx.font = 'bold 11px -apple-system, sans-serif';
+  offCtx.textAlign = 'right';
+  offCtx.fillText('Rs 520', cardX + cardW - 12, c2Y + 28);
+
+  // Mini toast notification top right
+  if (showNewBadge && pulseTime < 2.5) {
+    const tx = offW - 108, ty = 60;
+    const tOff = Math.max(0, 1 - pulseTime * 3);
+    offCtx.save();
+    offCtx.translate(tOff * 60, 0);
+    offCtx.fillStyle = cfg.accentColor;
+    offCtx.shadowColor = 'rgba(0,0,0,0.3)';
+    offCtx.shadowBlur = 10;
+    offCtx.roundRect(tx, ty, 100, 36, 8);
+    offCtx.fill();
+    offCtx.shadowBlur = 0;
+    offCtx.fillStyle = '#042f1f';
+    offCtx.font = 'bold 9px -apple-system, sans-serif';
+    offCtx.textAlign = 'left';
+    offCtx.textBaseline = 'middle';
+    offCtx.fillText('NEW ORDER', tx + 10, ty + 14);
+    offCtx.font = '9px -apple-system, sans-serif';
+    offCtx.fillText('#1382 - Rs 745', tx + 10, ty + 26);
+    offCtx.restore();
+  }
+}
+
+// --- Live order board screen ---
+function drawOrderBoard(progress, servedIdx = -1, highlightIdx = -1) {
+  offCtx.fillStyle = '#f3f4f6';
+  offCtx.fillRect(0, 0, offW, offH);
+
+  // Header
+  offCtx.fillStyle = '#fff';
+  offCtx.fillRect(0, 0, offW, 48);
+  offCtx.fillStyle = '#111827';
+  offCtx.font = 'bold 13px -apple-system, sans-serif';
+  offCtx.textAlign = 'left';
+  offCtx.textBaseline = 'middle';
+  offCtx.fillText('Order Board', 14, 24);
+
+  // Live pill
+  offCtx.fillStyle = hexA(cfg.accentColor, 0.15);
+  offCtx.roundRect(offW - 54, 14, 40, 20, 10);
+  offCtx.fill();
+  offCtx.fillStyle = cfg.accentColor;
+  offCtx.beginPath();
+  offCtx.arc(offW - 44, 24, 3, 0, Math.PI * 2);
+  offCtx.fill();
+  offCtx.fillStyle = '#065f46';
+  offCtx.font = 'bold 9px -apple-system, sans-serif';
+  offCtx.textAlign = 'right';
+  offCtx.textBaseline = 'middle';
+  offCtx.fillText('Live', offW - 20, 24);
+
+  // Status columns
+  const columns = [
+    { name: 'New', color: cfg.accentColor },
+    { name: 'Preparing', color: '#f59e0b' },
+    { name: 'Ready', color: '#3b82f6' },
+  ];
+  for (let i = 0; i < columns.length; i++) {
+    const cxCol = 14 + i * ((offW - 28) / 3);
+    offCtx.fillStyle = columns[i].color;
+    offCtx.beginPath();
+    offCtx.arc(cxCol + 5, 66, 3, 0, Math.PI * 2);
+    offCtx.fill();
+    offCtx.fillStyle = '#374151';
+    offCtx.font = 'bold 9px -apple-system, sans-serif';
+    offCtx.textAlign = 'left';
+    offCtx.textBaseline = 'middle';
+    offCtx.fillText(columns[i].name.toUpperCase(), cxCol + 12, 66);
+  }
+
+  // Order cards
+  const orders = [
+    { no: 1382, table: 3, items: 4, total: 745, wait: 1, status: 0 },
+    { no: 1381, table: 5, items: 2, total: 520, wait: 4, status: 1 },
+    { no: 1380, table: 7, items: 3, total: 390, wait: 8, status: 2 },
+  ];
+  const y0 = 86;
+  for (let i = 0; i < orders.length; i++) {
+    const o = orders[i];
+    const yy = y0 + i * 108;
+    const isServed = servedIdx === i;
+    const isHighlight = highlightIdx === i;
+
+    // Card
+    offCtx.save();
+    if (isServed) {
+      const sp = 0.5 + 0.5 * Math.sin(progress * 10);
+      offCtx.globalAlpha = 1 - clamp01((progress - 0.5) * 2);
+    }
+    offCtx.fillStyle = '#fff';
+    offCtx.strokeStyle = isHighlight ? cfg.accentColor : '#e5e7eb';
+    offCtx.lineWidth = isHighlight ? 2 : 1;
+    offCtx.roundRect(14, yy, offW - 28, 96, 10);
+    offCtx.fill();
+    offCtx.stroke();
+
+    // Order number
+    offCtx.fillStyle = '#111827';
+    offCtx.font = 'bold 14px -apple-system, sans-serif';
+    offCtx.textAlign = 'left';
+    offCtx.textBaseline = 'alphabetic';
+    offCtx.fillText('#' + o.no, 24, yy + 22);
+
+    // Table
+    offCtx.fillStyle = hexA(cfg.brandColor, 0.1);
+    offCtx.roundRect(60, yy + 10, 48, 16, 8);
+    offCtx.fill();
+    offCtx.fillStyle = cfg.brandColor;
+    offCtx.font = 'bold 9px -apple-system, sans-serif';
+    offCtx.textAlign = 'center';
+    offCtx.textBaseline = 'middle';
+    offCtx.fillText('TABLE ' + o.table, 84, yy + 18);
+
+    // Status chip
+    const statusColor = columns[o.status].color;
+    const statusLabel = columns[o.status].name;
+    offCtx.fillStyle = hexA(statusColor, 0.15);
+    const scw = offCtx.measureText(statusLabel).width + 18;
+    offCtx.roundRect(offW - 24 - scw, yy + 10, scw, 16, 8);
+    offCtx.fill();
+    offCtx.fillStyle = statusColor;
+    offCtx.font = 'bold 9px -apple-system, sans-serif';
+    offCtx.textAlign = 'center';
+    offCtx.fillText(statusLabel.toUpperCase(), offW - 24 - scw/2, yy + 18);
+
+    // Items & total
+    offCtx.fillStyle = '#6b7280';
+    offCtx.font = '10px -apple-system, sans-serif';
+    offCtx.textAlign = 'left';
+    offCtx.textBaseline = 'alphabetic';
+    offCtx.fillText(o.items + ' items - Rs ' + o.total, 24, yy + 44);
+
+    // Wait timer
+    offCtx.fillStyle = o.wait > 5 ? '#dc2626' : '#374151';
+    offCtx.font = '10px -apple-system, sans-serif';
+    offCtx.fillText('Wait: ' + o.wait + ' min', 24, yy + 62);
+
+    // Action button
+    const btnLabel = o.status === 0 ? 'Start' : o.status === 1 ? 'Mark Ready' : 'Served';
+    const btnColor = o.status === 0 ? cfg.accentColor : o.status === 1 ? '#3b82f6' : cfg.brandColor;
+    offCtx.fillStyle = btnColor;
+    offCtx.roundRect(24, yy + 72, offW - 48, 18, 9);
+    offCtx.fill();
+    offCtx.fillStyle = '#fff';
+    offCtx.font = 'bold 10px -apple-system, sans-serif';
+    offCtx.textAlign = 'center';
+    offCtx.textBaseline = 'middle';
+    offCtx.fillText(btnLabel, offW/2, yy + 81);
+
+    offCtx.restore();
+  }
+}
+
+// --- AI Insights screen ---
+function drawInsightsScreen(progress, revenueCount, barProgress) {
+  offCtx.fillStyle = '#fff';
+  offCtx.fillRect(0, 0, offW, offH);
+
+  // Header
+  offCtx.fillStyle = cfg.brandColor;
+  offCtx.fillRect(0, 0, offW, 64);
+  offCtx.fillStyle = '#fff';
+  offCtx.font = 'bold 14px -apple-system, sans-serif';
+  offCtx.textAlign = 'left';
+  offCtx.textBaseline = 'middle';
+  offCtx.fillText('Weekly Insights', 16, 24);
+  offCtx.font = '10px -apple-system, sans-serif';
+  offCtx.globalAlpha = 0.8;
+  offCtx.fillText('AI powered - Nov 4-10', 16, 46);
+  offCtx.globalAlpha = 1;
+
+  // Revenue card
+  offCtx.fillStyle = '#f9fafb';
+  offCtx.roundRect(14, 80, offW - 28, 80, 12);
+  offCtx.fill();
+  offCtx.fillStyle = '#6b7280';
+  offCtx.font = '10px -apple-system, sans-serif';
+  offCtx.textAlign = 'left';
+  offCtx.textBaseline = 'alphabetic';
+  offCtx.fillText('TOTAL REVENUE', 26, 102);
+
+  // Big revenue number with count-up
+  offCtx.fillStyle = '#111827';
+  offCtx.font = 'bold 28px -apple-system, sans-serif';
+  const revStr = 'Rs ' + Math.floor(revenueCount).toLocaleString('en-IN');
+  offCtx.fillText(revStr, 26, 134);
+
+  // Delta
+  offCtx.fillStyle = cfg.accentColor;
+  offCtx.font = 'bold 10px -apple-system, sans-serif';
+  offCtx.fillText('+ 18% vs last week', 26, 152);
+
+  // Chart card
+  offCtx.fillStyle = '#f9fafb';
+  offCtx.roundRect(14, 174, offW - 28, 150, 12);
+  offCtx.fill();
+  offCtx.fillStyle = '#374151';
+  offCtx.font = 'bold 11px -apple-system, sans-serif';
+  offCtx.textAlign = 'left';
+  offCtx.textBaseline = 'alphabetic';
+  offCtx.fillText('Daily revenue', 26, 194);
+
+  // Bars
+  const bars = [
+    { d: 'Mon', v: 0.45 },
+    { d: 'Tue', v: 0.60 },
+    { d: 'Wed', v: 0.52 },
+    { d: 'Thu', v: 0.75 },
+    { d: 'Fri', v: 0.92 },
+    { d: 'Sat', v: 1.0 },
+    { d: 'Sun', v: 0.82 },
+  ];
+  const barMaxH = 80;
+  const barW = (offW - 60) / bars.length;
+  const barTop = 300;
+  for (let i = 0; i < bars.length; i++) {
+    const b = bars[i];
+    const show = clamp01((barProgress - i * 0.08) / 0.3);
+    const h = b.v * barMaxH * ease.easeOutBack(show);
+    const xx = 30 + i * barW;
+    // Bar
+    const isMax = b.v === 1.0;
+    offCtx.fillStyle = isMax ? cfg.accentColor : hexA(cfg.brandColor, 0.6);
+    offCtx.roundRect(xx + 4, barTop - h, barW - 8, h, 4);
+    offCtx.fill();
+    // Label
+    offCtx.fillStyle = '#9ca3af';
+    offCtx.font = '9px -apple-system, sans-serif';
+    offCtx.textAlign = 'center';
+    offCtx.textBaseline = 'alphabetic';
+    offCtx.fillText(b.d, xx + barW/2, barTop + 14);
+  }
+
+  // Peak hours callout
+  if (progress > 0.6) {
+    const ap = clamp01((progress - 0.6) / 0.4);
+    offCtx.globalAlpha = ap;
+    offCtx.fillStyle = hexA(cfg.accentColor, 0.1);
+    offCtx.strokeStyle = cfg.accentColor;
+    offCtx.lineWidth = 1;
+    offCtx.roundRect(14, 340, offW - 28, 72, 12);
+    offCtx.fill();
+    offCtx.stroke();
+
+    // Icon
+    offCtx.fillStyle = cfg.accentColor;
+    offCtx.beginPath();
+    offCtx.arc(36, 362, 10, 0, Math.PI * 2);
+    offCtx.fill();
+    offCtx.fillStyle = '#042f1f';
+    offCtx.font = 'bold 11px -apple-system, sans-serif';
+    offCtx.textAlign = 'center';
+    offCtx.textBaseline = 'middle';
+    offCtx.fillText('!', 36, 362);
+
+    offCtx.fillStyle = '#111827';
+    offCtx.font = 'bold 11px -apple-system, sans-serif';
+    offCtx.textAlign = 'left';
+    offCtx.textBaseline = 'alphabetic';
+    offCtx.fillText('Peak hours: 7-9 PM', 54, 360);
+    offCtx.fillStyle = '#374151';
+    offCtx.font = '10px -apple-system, sans-serif';
+    offCtx.fillText('Schedule 1 more staff. Est.', 54, 378);
+    offCtx.fillStyle = cfg.brandColor;
+    offCtx.font = 'bold 10px -apple-system, sans-serif';
+    offCtx.fillText('+ Rs 8,400 / week', 54, 396);
+    offCtx.globalAlpha = 1;
+  }
+}
+
+// ============================================================
+// Phone with 3D Y-tilt
+// ============================================================
+function drawPhoneWith3D(ctx, phoneX, phoneY, phoneFullW, phoneFullH, rotY, zoomInside = 1, offsetX = 0, offsetY = 0) {
+  const cosA = Math.max(0.01, Math.abs(Math.cos(rotY)));
+  const pw = phoneFullW * cosA;
+  const ph = phoneFullH;
+  const px = phoneX - pw / 2;
+  const py = phoneY - ph / 2;
+
+  // Shadow
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.filter = 'blur(20px)';
+  ctx.beginPath();
+  ctx.ellipse(phoneX, phoneY + ph/2 + 10, pw/2, 20, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Phone body (with bezel)
+  ctx.save();
+  // Outer bezel
+  const bezel = u(8);
+  ctx.fillStyle = '#1a1a1a';
+  ctx.roundRect(px - bezel/2, py - bezel/2, pw + bezel, ph + bezel, u(32));
+  ctx.fill();
+
+  // Metallic edge gradient
+  const edgeGrad = ctx.createLinearGradient(px - bezel/2, 0, px + pw + bezel/2, 0);
+  edgeGrad.addColorStop(0, '#333');
+  edgeGrad.addColorStop(0.1, '#555');
+  edgeGrad.addColorStop(0.5, '#1a1a1a');
+  edgeGrad.addColorStop(0.9, '#555');
+  edgeGrad.addColorStop(1, '#333');
+  ctx.fillStyle = edgeGrad;
+  ctx.roundRect(px - bezel/2, py - bezel/2, pw + bezel, ph + bezel, u(32));
+  ctx.fill();
+
+  // Inner black
+  ctx.fillStyle = '#000';
+  ctx.roundRect(px - 2, py - 2, pw + 4, ph + 4, u(28));
+  ctx.fill();
+
+  // Screen area (clip)
+  ctx.save();
+  ctx.roundRect(px, py, pw, ph, u(24));
+  ctx.clip();
+
+  // Draw offscreen image, scaled/squished
+  // Apply inside zoom via scale
+  const srcW = offW;
+  const srcH = offH;
+  const sx = -offsetX * srcW;
+  const sy = -offsetY * srcH;
+  if (zoomInside > 1) {
+    // Zoom crops a region
+    const cropW = srcW / zoomInside;
+    const cropH = srcH / zoomInside;
+    const cropX = (srcW - cropW) / 2 - offsetX * (srcW * 0.3);
+    const cropY = (srcH - cropH) / 2 - offsetY * (srcH * 0.3);
+    ctx.drawImage(off, cropX, cropY, cropW, cropH, px, py, pw, ph);
+  } else {
+    ctx.drawImage(off, 0, 0, srcW, srcH, px, py, pw, ph);
+  }
+
+  // Screen reflection (side glare)
+  const reflGrad = ctx.createLinearGradient(px, py, px + pw, py);
+  reflGrad.addColorStop(0, 'rgba(255,255,255,0.18)');
+  reflGrad.addColorStop(0.2, 'rgba(255,255,255,0.04)');
+  reflGrad.addColorStop(0.5, 'rgba(255,255,255,0)');
+  reflGrad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = reflGrad;
+  ctx.fillRect(px, py, pw, ph);
+
+  // When rotated, add a dark edge on the receding side to simulate 3D
+  const tilt = Math.sin(rotY);
+  if (Math.abs(tilt) > 0.02) {
+    const dir = tilt > 0 ? 1 : -1;
+    const g = ctx.createLinearGradient(dir > 0 ? px + pw : px, 0, dir > 0 ? px : px + pw, 0);
+    g.addColorStop(0, 'rgba(0,0,0,0)');
+    g.addColorStop(1, `rgba(0,0,0,${Math.min(0.4, Math.abs(tilt) * 0.6)})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(px, py, pw, ph);
+  }
+
+  ctx.restore();
+
+  // Notch
+  const notchW = pw * 0.26;
+  const notchH = u(22);
+  ctx.fillStyle = '#000';
+  ctx.roundRect(phoneX - notchW/2, py + u(8), notchW, notchH, u(11));
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ============================================================
+// Scene Renderers
+// ============================================================
+
+// Returns { head, caption, headProgress, capProgress }
+function sceneAnim(scene, elapsed) {
+  return elapsed - scene.start;
+}
+
+function renderScene_hook(ctx, t, w, h) {
+  // Fast kinetic text
+  // "Still managing orders by hand?" - zoom in
+  const p1 = tween(t, 0, 0.6, ease.easeOutBack);
+  const p2 = tween(t, 0.8, 1.4, ease.easeOutBack);
+  const p3 = tween(t, 1.6, 2.2, ease.easeOutBack);
+  const pOut = tween(t, 3.3, 4.0, ease.easeIn);
+
+  ctx.save();
+  // Line 1 - big
+  const scene = cfg.scenes.find(s => s.id === 'hook');
+  const headText = scene.head;
+  ctx.globalAlpha = p1 * (1 - pOut);
+  const lineY = h * 0.38;
+  const scale1 = lerp(0.8, 1.0, p1);
+  ctx.save();
+  ctx.translate(w/2, lineY);
+  ctx.scale(scale1, scale1);
+  const lines = wrapLines(ctx, headText, u(340), `bold ${u(34)}px -apple-system, sans-serif`);
+  for (let i = 0; i < lines.length; i++) {
+    fillTextStyled(ctx, lines[i], 0, (i - (lines.length-1)/2) * u(42), u(34));
+  }
+  ctx.restore();
+
+  // Pain points - fly in from sides
+  ctx.globalAlpha = p2 * (1 - pOut);
+  const pp1x = lerp(-w, w/2, p2);
+  fillTextStyled(ctx, 'Lost tickets.', pp1x, h * 0.58, u(22), { color: '#ffd166', weight: 600 });
+
+  ctx.globalAlpha = p3 * (1 - pOut);
+  const pp2x = lerp(w * 1.5, w/2, p3);
+  fillTextStyled(ctx, 'Missed orders.', pp2x, h * 0.66, u(22), { color: '#ef4444', weight: 600 });
+
+  ctx.globalAlpha = 1 - pOut;
+  // Red strike through across the whole
+  if (p3 > 0.8) {
+    ctx.strokeStyle = hexA('#ef4444', clamp01((p3 - 0.5) * 3));
+    ctx.lineWidth = u(4);
+    ctx.beginPath();
+    ctx.moveTo(w * 0.1, h * 0.45);
+    ctx.lineTo(w * 0.9, h * 0.52);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // Caption at bottom
+  drawCaption(ctx, scene.caption, w, h, clamp01(p1 * 1.5) * (1 - pOut));
+}
+
+function renderScene_brand(ctx, t, w, h) {
+  const scene = cfg.scenes.find(s => s.id === 'brand');
+  const p = tween(t, 0, 1.0, ease.easeOutBack);
+  const pOut = tween(t, 2.5, 3.0, ease.easeIn);
+
+  // Particle burst
+  ctx.save();
+  const nBurst = 24;
+  for (let i = 0; i < nBurst; i++) {
+    const ang = (i / nBurst) * Math.PI * 2;
+    const r = ease.easeOut(p) * u(240);
+    const alpha = (1 - p) * 0.9 * (1 - pOut);
+    ctx.fillStyle = hexA(i % 2 === 0 ? cfg.accentColor : '#fff', alpha);
+    ctx.beginPath();
+    ctx.arc(w/2 + Math.cos(ang) * r, h/2 + Math.sin(ang) * r, u(3), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Scale-in logo
+  const scale = ease.easeOutBack(p);
+  ctx.save();
+  ctx.translate(w/2, h/2);
+  ctx.scale(scale, scale);
+  ctx.globalAlpha = (1 - pOut);
+
+  // Logo badge
+  ctx.save();
+  ctx.shadowColor = hexA(cfg.accentColor, 0.5);
+  ctx.shadowBlur = u(30);
+  const bw = u(100), bh = u(100);
+  ctx.fillStyle = cfg.accentColor;
+  ctx.roundRect(-bw/2, -bh/2 - u(40), bw, bh, u(22));
+  ctx.fill();
+  ctx.fillStyle = '#042f1f';
+  ctx.font = `bold ${u(50)}px -apple-system, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('TT', 0, -u(40));
+  ctx.restore();
+
+  // Brand name
+  fillTextStyled(ctx, scene.head, 0, u(60), u(54));
+  // Tagline
+  ctx.globalAlpha = tween(t, 0.6, 1.2) * (1 - pOut);
+  fillTextStyled(ctx, scene.caption, 0, u(110), u(20), { color: 'rgba(255,255,255,0.8)', weight: 400, style: 'white' });
+  ctx.restore();
+}
+
+function renderScene_qr(ctx, t, w, h) {
+  const scene = cfg.scenes.find(s => s.id === 'qr');
+  const pQR = tween(t, 0, 0.8, ease.easeOutBack);
+  const pArrow = tween(t, 0.6, 1.2, ease.easeOut);
+  const pPhone = tween(t, 1.0, 2.0, ease.easeOut);
+  const pStraighten = tween(t, 2.0, 2.8, ease.easeInOut);
+  const pLoad = tween(t, 2.8, 4.2, ease.easeOut);
+  const pZoom = tween(t, 5.0, 6.5, ease.easeInOut);
+
+  // Draw QR card on left - but hide during zoom
+  const qrFade = 1 - clamp01(pZoom * 1.5);
+  if (qrFade > 0) {
+    ctx.save();
+    ctx.globalAlpha = pQR * qrFade;
+    const qrScale = ease.easeOutBack(pQR);
+    const qrX = w * 0.28, qrY = h * 0.5;
+    ctx.translate(qrX, qrY);
+    ctx.scale(qrScale, qrScale);
+
+    // Card
+    const cardW = u(140), cardH = u(180);
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = u(16);
+    ctx.roundRect(-cardW/2, -cardH/2, cardW, cardH, u(14));
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // QR pattern
+    const qrSize = u(100);
+    const qrX0 = -qrSize/2, qrY0 = -cardH/2 + u(16);
+    ctx.fillStyle = '#000';
+    ctx.fillRect(qrX0, qrY0, qrSize, qrSize);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(qrX0 + u(6), qrY0 + u(6), qrSize - u(12), qrSize - u(12));
+
+    // Fake QR modules
+    const mod = u(5);
+    const cells = Math.floor((qrSize - u(12)) / mod);
+    ctx.fillStyle = '#000';
+    const seed = 42;
+    for (let yy = 0; yy < cells; yy++) {
+      for (let xx = 0; xx < cells; xx++) {
+        const r = Math.sin(xx * 12.9898 + yy * 78.233 + seed) * 43758.5453;
+        const v = r - Math.floor(r);
+        if (v > 0.5) {
+          ctx.fillRect(qrX0 + u(6) + xx * mod, qrY0 + u(6) + yy * mod, mod - 0.5, mod - 0.5);
+        }
+      }
+    }
+    // Finder patterns (corners)
+    const fs = u(22);
+    const corners = [[qrX0+u(6), qrY0+u(6)],[qrX0+qrSize-u(6)-fs, qrY0+u(6)],[qrX0+u(6), qrY0+qrSize-u(6)-fs]];
+    for (const [cx, cy] of corners) {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(cx, cy, fs, fs);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(cx + u(4), cy + u(4), fs - u(8), fs - u(8));
+      ctx.fillStyle = '#000';
+      ctx.fillRect(cx + u(8), cy + u(8), fs - u(16), fs - u(16));
+    }
+
+    // Table label
+    ctx.fillStyle = '#111';
+    ctx.font = `bold ${u(13)}px -apple-system, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('SCAN TO ORDER', 0, qrY0 + qrSize + u(18));
+    ctx.font = `${u(10)}px -apple-system, sans-serif`;
+    ctx.fillStyle = cfg.brandColor;
+    ctx.fillText('Table 3', 0, qrY0 + qrSize + u(34));
+
+    ctx.restore();
+  }
+
+  // Arrow
+  if (pArrow > 0 && qrFade > 0) {
+    ctx.save();
+    ctx.globalAlpha = pArrow * qrFade;
+    ctx.strokeStyle = cfg.accentColor;
+    ctx.fillStyle = cfg.accentColor;
+    ctx.lineWidth = u(4);
+    ctx.lineCap = 'round';
+    const ax = w * 0.46, ay = h * 0.5;
+    const al = u(40) * pArrow;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax + al, ay);
+    ctx.stroke();
+    // Arrowhead
+    ctx.beginPath();
+    ctx.moveTo(ax + al, ay);
+    ctx.lineTo(ax + al - u(10), ay - u(7));
+    ctx.lineTo(ax + al - u(10), ay + u(7));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Draw offscreen phone content (QR loading -> menu)
+  if (pLoad < 1) {
+    drawQRScreen(pLoad);
+  } else {
+    drawMenuScreen(1);
+  }
+
+  // Phone
+  if (pPhone > 0) {
+    // Initial Y-tilt: 90deg (edge-on), straightens to 0
+    const tiltStart = Math.PI / 2 * (1 - pStraighten) * cfg.tilt3D / 0.4;
+    const flyInY = lerp(-u(60), 0, pPhone);
+
+    // Phone position - starts off right, lands slightly right, then centers on zoom
+    const defaultX = w * 0.72;
+    const zoomX = w * 0.5;
+    const phoneX = lerp(defaultX, zoomX, pZoom);
+    const phoneY = h * 0.5 + flyInY * (1 - pStraighten);
+
+    // Zoom (camera punch-in)
+    const camZoom = lerp(1, cfg.zoom, pZoom);
+    const phoneScale = camZoom;
+
+    const basePhoneW = u(170);
+    const basePhoneH = u(348);
+    const pw = basePhoneW * phoneScale;
+    const ph = basePhoneH * phoneScale;
+
+    ctx.save();
+    ctx.globalAlpha = pPhone;
+    drawPhoneWith3D(ctx, phoneX, phoneY, pw, ph, tiltStart);
+    ctx.restore();
+  }
+
+  // Heading at top
+  const headOpacity = tween(t, 0.3, 1.0) * (1 - tween(t, 6.4, 6.8));
+  drawHeading(ctx, scene.head, w, h, headOpacity);
+  drawCaption(ctx, scene.caption, w, h, headOpacity);
+}
+
+function renderScene_menu(ctx, t, w, h) {
+  const scene = cfg.scenes.find(s => s.id === 'menu');
+  // Phone centered, zoom in on item 1 at 2s, then pan up
+  const pIn = tween(t, 0, 0.5, ease.easeOut);
+  const pZoom = tween(t, 2.2, 3.5, ease.easeInOut);
+  const pZoomOut = tween(t, 4.5, 5.5, ease.easeInOut);
+  const pOut = tween(t, 5.5, 6.0, ease.easeIn);
+
+  const scrollP = tween(t, 0.8, 2.0, ease.easeOut);
+  const highlightItem = pZoom > 0.3 ? 1 : -1;
+  drawMenuScreen(scrollP, highlightItem);
+
+  // Phone
+  const phoneX = w / 2;
+  const phoneY = h / 2;
+  const cameraZoom = lerp(1, lerp(1, cfg.zoom, pZoom), 1 - pZoomOut);
+  const basePhoneW = u(200);
+  const basePhoneH = u(410);
+  const pw = basePhoneW * cameraZoom;
+  const ph = basePhoneH * cameraZoom;
+
+  // Subtle breathing tilt
+  const breathe = Math.sin(t * 0.8) * 0.03 * cfg.tilt3D;
+
+  ctx.save();
+  ctx.globalAlpha = pIn * (1 - pOut);
+  drawPhoneWith3D(ctx, phoneX, phoneY, pw, ph, breathe);
+  ctx.restore();
+
+  drawHeading(ctx, scene.head, w, h, pIn * (1 - pOut));
+  drawCaption(ctx, scene.caption, w, h, pIn * (1 - pOut));
+}
+
+function renderScene_checkout(ctx, t, w, h) {
+  const scene = cfg.scenes.find(s => s.id === 'checkout');
+  const pIn = tween(t, 0, 0.5, ease.easeOut);
+  const pTap = tween(t, 2.2, 2.6, ease.easeOut);
+  const pConfirm = tween(t, 2.6, 3.2, ease.easeOut);
+  const pSuccess = tween(t, 4.0, 4.5, ease.easeIn);
+  const pSuccessView = tween(t, 4.5, 6.0, ease.easeOut);
+  const pOut = tween(t, 6.5, 7.0, ease.easeIn);
+
+  const showSuccess = pSuccess > 0.5;
+  const basePhoneW = u(200);
+  const basePhoneH = u(410);
+  const phoneX = w / 2;
+  const phoneY = h / 2;
+
+  if (!showSuccess) {
+    const payState = pConfirm > 0.3 ? 1 : 0;
+    const tapPos = pTap > 0 && pTap < 1 ? [offW/2, 420, pTap] : null;
+    drawCheckoutScreen(t, payState, tapPos);
+  } else {
+    drawSuccessScreen(pSuccessView);
+  }
+
+  // Phone has subtle tilt
+  const breathe = Math.sin(t * 0.7) * 0.04 * cfg.tilt3D;
+  // Zoom in on button at tap
+  const btnZoom = lerp(1, 1.1, tween(t, 1.6, 2.4, ease.easeOut) * (1 - tween(t, 3.0, 3.6, ease.easeIn)));
+
+  ctx.save();
+  ctx.globalAlpha = pIn * (1 - pOut);
+  drawPhoneWith3D(ctx, phoneX, phoneY, basePhoneW * btnZoom, basePhoneH * btnZoom, breathe);
+  ctx.restore();
+
+  const headTxt = showSuccess ? 'Order placed!' : scene.head;
+  const capTxt = showSuccess ? 'Receipt sent instantly.' : scene.caption;
+  drawHeading(ctx, headTxt, w, h, pIn * (1 - pOut));
+  drawCaption(ctx, capTxt, w, h, pIn * (1 - pOut));
+}
+
+function renderScene_notify(ctx, t, w, h) {
+  const scene = cfg.scenes.find(s => s.id === 'notify');
+  const pIn = tween(t, 0, 0.5, ease.easeOut);
+  const pSplit = tween(t, 1.0, 2.0, ease.easeInOut);
+  const pNotify = tween(t, 2.5, 3.0, ease.easeOut);
+  const pDashZoom = tween(t, 4.0, 5.5, ease.easeInOut);
+  const pOut = tween(t, 6.5, 7.0, ease.easeIn);
+
+  // Two phones: customer phone (success) and dashboard phone
+  const phoneScale = 0.75;
+  const basePhoneW = u(170) * phoneScale;
+  const basePhoneH = u(348) * phoneScale;
+
+  const singlePos = w / 2;
+  const leftPos = w * 0.28;
+  const rightPos = w * 0.72;
+  const customerX = lerp(singlePos - u(100), leftPos, pSplit);
+  const dashX = lerp(singlePos + u(100), rightPos, pSplit);
+  const baseY = h * 0.52;
+
+  // Customer phone - success screen
+  drawSuccessScreen(1);
+  const customerBuf = document.createElement('canvas');
+  customerBuf.width = offW; customerBuf.height = offH;
+  customerBuf.getContext('2d').drawImage(off, 0, 0);
+
+  // Dashboard phone - notification screen
+  drawDashboardScreen(1, pNotify > 0.5, Math.max(0, t - 2.5));
+
+  // Camera zoom to dashboard
+  const dashZoom = lerp(1, 1.4, pDashZoom);
+  ctx.save();
+  if (pDashZoom > 0) {
+    // Zoom in on dashboard phone; fade out customer
+    ctx.globalAlpha = (1 - pDashZoom) * pIn * (1 - pOut);
+    ctx.drawImage(customerBuf, 0, 0, offW, offH,
+      customerX - basePhoneW/2, baseY - basePhoneH/2, basePhoneW, basePhoneH);
+    // Draw customer phone frame
+    drawPhoneFrameOnly(ctx, customerX, baseY, basePhoneW, basePhoneH);
+  }
+  ctx.restore();
+
+  // Arrow between
+  if (pSplit > 0.5 && pDashZoom < 0.3) {
+    ctx.save();
+    ctx.globalAlpha = (pSplit - 0.5) * 2 * pIn * (1 - pDashZoom * 3);
+    ctx.strokeStyle = cfg.accentColor;
+    ctx.fillStyle = cfg.accentColor;
+    ctx.lineWidth = u(3);
+    ctx.lineCap = 'round';
+    const ay = baseY - u(20);
+    const ax1 = customerX + basePhoneW/2 + u(8);
+    const ax2 = dashX - basePhoneW/2 - u(8);
+    ctx.beginPath();
+    ctx.moveTo(ax1, ay);
+    ctx.lineTo(ax2, ay);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(ax2, ay);
+    ctx.lineTo(ax2 - u(8), ay - u(6));
+    ctx.lineTo(ax2 - u(8), ay + u(6));
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Dashboard phone
+  ctx.save();
+  ctx.globalAlpha = pIn * (1 - pOut);
+  // Pulse glow when notification arrives
+  if (pNotify > 0 && pNotify < 1) {
+    const pg = Math.sin(pNotify * Math.PI);
+    ctx.shadowColor = cfg.accentColor;
+    ctx.shadowBlur = u(40) * pg;
+  }
+  drawPhoneWith3D(ctx, dashX, baseY, basePhoneW * dashZoom, basePhoneH * dashZoom, 0);
+  ctx.restore();
+
+  drawHeading(ctx, scene.head, w, h, pIn * (1 - pOut));
+  drawCaption(ctx, scene.caption, w, h, pIn * (1 - pOut));
+}
+
+function drawPhoneFrameOnly(ctx, phoneX, phoneY, pw, ph) {
+  const bezel = u(6);
+  ctx.save();
+  ctx.fillStyle = '#1a1a1a';
+  ctx.roundRect(phoneX - pw/2 - bezel/2, phoneY - ph/2 - bezel/2, pw + bezel, ph + bezel, u(24));
+  ctx.fill();
+  ctx.restore();
+}
+
+function renderScene_board(ctx, t, w, h) {
+  const scene = cfg.scenes.find(s => s.id === 'board');
+  const pIn = tween(t, 0, 0.5, ease.easeOut);
+  const pHighlight = tween(t, 1.2, 1.8, ease.easeOut);
+  const pTap = tween(t, 2.5, 3.0, ease.easeOut);
+  const pServed = tween(t, 3.0, 4.2, ease.easeOut);
+  const pOut = tween(t, 5.5, 6.0, ease.easeIn);
+
+  const highlightIdx = pHighlight > 0.5 ? 0 : -1;
+  const servedIdx = pServed > 0 ? 0 : -1;
+  drawOrderBoard(pServed, servedIdx, highlightIdx);
+
+  // Tap indicator on dashboard button
+  if (pTap > 0 && pTap < 1) {
+    offCtx.strokeStyle = hexA(cfg.accentColor, 1 - pTap);
+    offCtx.lineWidth = 2;
+    offCtx.beginPath();
+    offCtx.arc(offW/2, 167, 6 + pTap * 24, 0, Math.PI * 2);
+    offCtx.stroke();
+    offCtx.fillStyle = hexA('#fff', (1 - pTap) * 0.4);
+    offCtx.beginPath();
+    offCtx.arc(offW/2, 167, 10, 0, Math.PI * 2);
+    offCtx.fill();
+  }
+
+  const basePhoneW = u(220);
+  const basePhoneH = u(450);
+  const breathe = Math.sin(t * 0.6) * 0.04 * cfg.tilt3D;
+
+  ctx.save();
+  ctx.globalAlpha = pIn * (1 - pOut);
+  drawPhoneWith3D(ctx, w/2, h/2, basePhoneW, basePhoneH, breathe);
+  ctx.restore();
+
+  drawHeading(ctx, scene.head, w, h, pIn * (1 - pOut));
+  drawCaption(ctx, scene.caption, w, h, pIn * (1 - pOut));
+}
+
+function renderScene_insights(ctx, t, w, h) {
+  const scene = cfg.scenes.find(s => s.id === 'insights');
+  const pIn = tween(t, 0, 0.5, ease.easeOut);
+  const pRev = tween(t, 0.5, 2.0, ease.easeOut);
+  const pBars = tween(t, 2.0, 4.5, ease.easeOut);
+  const pCallout = tween(t, 3.5, 4.5, ease.easeOut);
+  const pOut = tween(t, 5.5, 6.0, ease.easeIn);
+
+  const revenue = pRev * 124500;
+  drawInsightsScreen(pCallout, revenue, pBars);
+
+  const basePhoneW = u(220);
+  const basePhoneH = u(450);
+  const breathe = Math.sin(t * 0.8) * 0.04 * cfg.tilt3D;
+  ctx.save();
+  ctx.globalAlpha = pIn * (1 - pOut);
+  drawPhoneWith3D(ctx, w/2, h/2, basePhoneW, basePhoneH, breathe);
+  ctx.restore();
+
+  drawHeading(ctx, scene.head, w, h, pIn * (1 - pOut));
+  drawCaption(ctx, scene.caption, w, h, pIn * (1 - pOut));
+}
+
+function renderScene_cta(ctx, t, w, h) {
+  const scene = cfg.scenes.find(s => s.id === 'cta');
+  const pIn = tween(t, 0, 0.8, ease.easeOutBack);
+  const pCTA = tween(t, 1.2, 1.8, ease.easeOutBack);
+  const pOut = tween(t, 3.5, 4.0, ease.easeIn);
+
+  // Particle burst behind logo
+  ctx.save();
+  const n = 32;
+  const burstR = ease.easeOut(pIn) * u(300);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    ctx.fillStyle = hexA(i % 3 === 0 ? cfg.accentColor : i % 3 === 1 ? '#fff' : cfg.brandColor, (1 - pIn * 0.7) * (1 - pOut));
+    ctx.beginPath();
+    ctx.arc(w/2 + Math.cos(a) * burstR, h/2 + Math.sin(a) * burstR, u(4) * (1 - pIn * 0.7), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  const scale = ease.easeOutBack(pIn);
+  ctx.save();
+  ctx.translate(w/2, h/2 - u(30));
+  ctx.scale(scale, scale);
+  ctx.globalAlpha = (1 - pOut);
+
+  // Logo
+  ctx.save();
+  ctx.shadowColor = hexA(cfg.accentColor, 0.5);
+  ctx.shadowBlur = u(30);
+  ctx.fillStyle = cfg.accentColor;
+  ctx.roundRect(-u(60), -u(100), u(120), u(120), u(26));
+  ctx.fill();
+  ctx.fillStyle = '#042f1f';
+  ctx.font = `bold ${u(60)}px -apple-system, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('TT', 0, -u(40));
+  ctx.restore();
+
+  fillTextStyled(ctx, scene.head, 0, u(50), u(60));
+  fillTextStyled(ctx, 'One QR. Full control.', 0, u(100), u(20), { color: 'rgba(255,255,255,0.8)', weight: 400 });
+  ctx.restore();
+
+  // CTA pill
+  if (pCTA > 0) {
+    ctx.save();
+    const pillScale = ease.easeOutBack(pCTA);
+    ctx.translate(w/2, h * 0.78);
+    ctx.scale(pillScale, pillScale);
+    ctx.globalAlpha = pCTA * (1 - pOut);
+
+    // Pulsing shadow
+    const pulse = 0.5 + 0.5 * Math.sin(t * 5);
+    ctx.shadowColor = hexA(cfg.accentColor, 0.5 * pulse);
+    ctx.shadowBlur = u(30);
+
+    const pillW = u(220), pillH = u(54);
+    ctx.fillStyle = cfg.accentColor;
+    ctx.roundRect(-pillW/2, -pillH/2, pillW, pillH, u(27));
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#042f1f';
+    ctx.font = `bold ${u(18)}px -apple-system, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('tabletap.dev', 0, 0);
+    ctx.restore();
+  }
+}
+
+// ============================================================
+// Heading & Caption helpers
+// ============================================================
+function drawHeading(ctx, text, w, h, opacity) {
+  if (opacity <= 0.01) return;
+  ctx.save();
+  ctx.globalAlpha = opacity;
+
+  const headY = h * 0.12;
+  // Backdrop
+  ctx.font = `bold ${u(22)}px -apple-system, sans-serif`;
+  const lines = wrapLines(ctx, text, w * 0.85, ctx.font);
+  const padV = u(14), padH = u(20);
+  const lineH = u(28);
+  const boxH = lineH * lines.length + padV * 2;
+  const boxW = Math.min(w * 0.9, u(360));
+  const boxY = headY - boxH / 2;
+
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.roundRect(w/2 - boxW/2, boxY, boxW, boxH, u(10));
+  ctx.fill();
+
+  // Accent bar
+  ctx.fillStyle = cfg.accentColor;
+  ctx.fillRect(w/2 - boxW/2, boxY, u(4), boxH);
+
+  for (let i = 0; i < lines.length; i++) {
+    fillTextStyled(ctx, lines[i], w/2, boxY + padV + i * lineH + lineH/2, u(22), { shadow: false });
+  }
+  ctx.restore();
+}
+function drawCaption(ctx, text, w, h, opacity) {
+  if (opacity <= 0.01) return;
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  const boxH = u(48);
+  const boxY = h - u(70);
+  // Dark band
+  const grad = ctx.createLinearGradient(0, boxY, 0, boxY + boxH);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.85)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, boxY - u(10), w, boxH + u(20));
+
+  ctx.font = `600 ${u(16)}px -apple-system, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#fff';
+  ctx.fillText(text, w/2, boxY + boxH/2);
+  ctx.restore();
+}
+
+// ============================================================
+// Scene dispatch
+// ============================================================
+function findScene(t) {
+  // clamp
+  if (t >= TOTAL()) return cfg.scenes[cfg.scenes.length - 1];
+  for (const s of cfg.scenes) {
+    if (t >= s.start && t < s.start + s.dur) return s;
+  }
+  return cfg.scenes[0];
+}
+
+function renderSceneByScene(ctx, scene, elapsed, w, h) {
+  const localT = elapsed - scene.start;
+  switch (scene.id) {
+    case 'hook':     return renderScene_hook(ctx, localT, w, h);
+    case 'brand':    return renderScene_brand(ctx, localT, w, h);
+    case 'qr':       return renderScene_qr(ctx, localT, w, h);
+    case 'menu':     return renderScene_menu(ctx, localT, w, h);
+    case 'checkout': return renderScene_checkout(ctx, localT, w, h);
+    case 'notify':   return renderScene_notify(ctx, localT, w, h);
+    case 'board':    return renderScene_board(ctx, localT, w, h);
+    case 'insights': return renderScene_insights(ctx, localT, w, h);
+    case 'cta':      return renderScene_cta(ctx, localT, w, h);
+  }
+}
+
+// ============================================================
+// Master frame renderer
+// ============================================================
+function renderFrame(ctx, elapsed) {
+  const w = stage.width, h = stage.height;
+  drawBackground(ctx, elapsed, w, h);
+
+  const scene = findScene(elapsed);
+  const localT = elapsed - scene.start;
+  const sceneEnd = scene.start + scene.dur;
+
+  // Cross-fade between scenes in last 0.3s
+  const fadeIn = 0.3;
+  const fadeOut = 0.3;
+  let alpha = 1;
+
+  if (localT < fadeIn) {
+    alpha = localT / fadeIn;
+  } else if (elapsed > sceneEnd - fadeOut) {
+    alpha = (sceneEnd - elapsed) / fadeOut;
+  }
+  alpha = clamp01(alpha);
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  renderSceneByScene(ctx, scene, elapsed, w, h);
+  ctx.restore();
+
+  // Next scene cross-fade in
+  if (elapsed > sceneEnd - fadeOut) {
+    const nextIdx = cfg.scenes.indexOf(scene) + 1;
+    if (nextIdx < cfg.scenes.length) {
+      const nextScene = cfg.scenes[nextIdx];
+      const na = 1 - (sceneEnd - elapsed) / fadeOut;
+      ctx.save();
+      ctx.globalAlpha = na;
+      renderSceneByScene(ctx, nextScene, sceneEnd, w, h);
+      ctx.restore();
+    }
+  }
+
+  // Progress bar at top
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.fillRect(0, 0, w, u(3));
+  ctx.fillStyle = cfg.accentColor;
+  ctx.fillRect(0, 0, w * (elapsed / TOTAL()), u(3));
+}
+
+// ============================================================
+// Audio (Web Audio API)
+// ============================================================
+let audioCtx = null;
+let bgmNodes = null;
+function ensureAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playWhoosh() {
+  if (!cfg.sfx.whoosh) return;
+  ensureAudio();
+  const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.4, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) {
+    const t = i / data.length;
+    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 2);
+  }
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  const filt = audioCtx.createBiquadFilter();
+  filt.type = 'bandpass';
+  filt.frequency.value = 1200;
+  filt.Q.value = 1.2;
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0.5 * cfg.sfxVol;
+  src.connect(filt).connect(gain).connect(audioCtx.destination);
+  src.start();
+}
+function playTap() {
+  if (!cfg.sfx.tap) return;
+  ensureAudio();
+  const osc = audioCtx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.value = 1000;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.4 * cfg.sfxVol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.12);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.12);
+}
+function playChime() {
+  if (!cfg.sfx.chime) return;
+  ensureAudio();
+  const now = audioCtx.currentTime;
+  const notes = [523.25, 659.25, 783.99];
+  for (let i = 0; i < notes.length; i++) {
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = notes[i];
+    const gain = audioCtx.createGain();
+    const start = now + i * 0.08;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.3 * cfg.sfxVol, start + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.4);
+    osc.connect(gain).connect(audioCtx.destination);
+    osc.start(start);
+    osc.stop(start + 0.4);
+  }
+}
+function playPing() {
+  if (!cfg.sfx.ping) return;
+  ensureAudio();
+  const osc = audioCtx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.value = 1500;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.3 * cfg.sfxVol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.3);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.3);
+}
+function startBGM() {
+  if (bgmNodes) return;
+  ensureAudio();
+  const o1 = audioCtx.createOscillator();
+  const o2 = audioCtx.createOscillator();
+  o1.type = 'sine'; o1.frequency.value = 220; // A3
+  o2.type = 'sine'; o2.frequency.value = 329.63; // E4
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0.03;
+  o1.connect(gain); o2.connect(gain); gain.connect(audioCtx.destination);
+  o1.start(); o2.start();
+  bgmNodes = { o1, o2, gain };
+}
+function stopBGM() {
+  if (!bgmNodes) return;
+  try {
+    bgmNodes.o1.stop(); bgmNodes.o2.stop();
+  } catch(e){}
+  bgmNodes = null;
+}
+
+// Audio cues bound to timeline positions
+const audioCues = [
+  { t: 0,    fn: playWhoosh },
+  { t: 4,    fn: playWhoosh },
+  { t: 4.1,  fn: playChime  },
+  { t: 7,    fn: playWhoosh },
+  { t: 9.5,  fn: playTap    },
+  { t: 14,   fn: playWhoosh },
+  { t: 20,   fn: playWhoosh },
+  { t: 22.5, fn: playTap    },
+  { t: 24.5, fn: playChime  },
+  { t: 27,   fn: playWhoosh },
+  { t: 29.5, fn: playPing   },
+  { t: 34,   fn: playWhoosh },
+  { t: 36.5, fn: playTap    },
+  { t: 40,   fn: playWhoosh },
+  { t: 46,   fn: playWhoosh },
+  { t: 47.2, fn: playChime  },
+];
+let lastCueIndex = -1;
+function processCues(prevT, nowT) {
+  if (nowT < prevT) { lastCueIndex = -1; prevT = 0; }
+  for (let i = 0; i < audioCues.length; i++) {
+    const c = audioCues[i];
+    if (c.t > prevT && c.t <= nowT) {
+      try { c.fn(); } catch(e){}
+    }
+  }
+}
+
+// ============================================================
+// Playback loop
+// ============================================================
+let elapsed = 0;
+let playing = false;
+let lastFrameTime = 0;
+let prevElapsed = 0;
+let recording = false;
+
+function loop(nowMs) {
+  if (!lastFrameTime) lastFrameTime = nowMs;
+  const dt = (nowMs - lastFrameTime) / 1000;
+  lastFrameTime = nowMs;
+
+  if (playing) {
+    elapsed += dt;
+    if (elapsed >= TOTAL()) {
+      elapsed = TOTAL();
+      playing = false;
+      updatePlayButton();
+    }
+    processCues(prevElapsed, elapsed);
+    prevElapsed = elapsed;
+    updateTimeUI();
+  }
+
+  renderFrame(ctx, elapsed);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ============================================================
+// UI: Transport
+// ============================================================
+const playBtn = document.getElementById('playBtn');
+const restartBtn = document.getElementById('restartBtn');
+const scrub = document.getElementById('scrub');
+const timeEl = document.getElementById('time');
+const markers = document.getElementById('markers');
+
+function updatePlayButton() {
+  playBtn.innerHTML = playing ? '&#10073;&#10073;' : '&#9654;';
+}
+function fmt(t) {
+  const m = Math.floor(t / 60);
+  const s = Math.floor(t % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+function updateTimeUI() {
+  scrub.value = Math.round((elapsed / TOTAL()) * 1000);
+  timeEl.textContent = `${fmt(elapsed)} / ${fmt(TOTAL())}`;
+  updateActiveScene();
+}
+
+playBtn.addEventListener('click', () => {
+  ensureAudio();
+  if (elapsed >= TOTAL()) elapsed = 0;
+  playing = !playing;
+  if (playing && cfg.sfx.bgm) startBGM();
+  else stopBGM();
+  prevElapsed = elapsed;
+  updatePlayButton();
+});
+restartBtn.addEventListener('click', () => {
+  elapsed = 0; prevElapsed = 0; lastCueIndex = -1;
+  updateTimeUI();
+});
+scrub.addEventListener('input', () => {
+  elapsed = (parseInt(scrub.value) / 1000) * TOTAL();
+  prevElapsed = elapsed;
+  updateTimeUI();
+});
+
+function renderMarkers() {
+  markers.innerHTML = '';
+  for (const s of cfg.scenes) {
+    if (s.start === 0) continue;
+    const m = document.createElement('div');
+    m.className = 'marker';
+    m.style.left = `${(s.start / TOTAL()) * 100}%`;
+    markers.appendChild(m);
+  }
+}
+renderMarkers();
+
+// ============================================================
+// UI: Tabs
+// ============================================================
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelector(`.panel[data-panel="${tab.dataset.tab}"]`).classList.add('active');
+  });
+});
+
+// ============================================================
+// UI: Scenes panel
+// ============================================================
+const scenesPanel = document.getElementById('scenesPanel');
+function renderScenesPanel() {
+  scenesPanel.innerHTML = '';
+  cfg.scenes.forEach((s, i) => {
+    const item = document.createElement('div');
+    item.className = 'scene-item';
+    item.dataset.idx = i;
+
+    const head = document.createElement('div');
+    head.className = 'scene-head';
+    head.innerHTML = `
+      <div class="scene-num">${i+1}</div>
+      <div class="scene-title">${s.head}</div>
+      <div class="scene-dur">${s.dur}s</div>
+      <div class="scene-caret">&#9654;</div>
+    `;
+    item.appendChild(head);
+
+    const body = document.createElement('div');
+    body.className = 'scene-body';
+    body.innerHTML = `
+      <div class="ctl">
+        <label class="ctl-label">Heading</label>
+        <textarea data-idx="${i}" data-field="head">${s.head}</textarea>
+      </div>
+      <div class="ctl">
+        <label class="ctl-label">Caption</label>
+        <input type="text" data-idx="${i}" data-field="caption" value="${s.caption}" />
+      </div>
+      <div class="ctl">
+        <label class="ctl-label">Duration (seconds)</label>
+        <input type="number" data-idx="${i}" data-field="dur" value="${s.dur}" min="1" max="20" step="0.5" />
+      </div>
+    `;
+    item.appendChild(body);
+
+    // Click head: jump to scene & toggle expand
+    head.addEventListener('click', (e) => {
+      // Jump to this scene start
+      elapsed = s.start;
+      prevElapsed = elapsed;
+      updateTimeUI();
+      // Expand
+      document.querySelectorAll('.scene-item').forEach(x => {
+        if (x !== item) x.classList.remove('expanded');
+      });
+      item.classList.toggle('expanded');
+    });
+    scenesPanel.appendChild(item);
+  });
+  updateActiveScene();
+  bindSceneInputs();
+}
+function bindSceneInputs() {
+  scenesPanel.querySelectorAll('[data-field]').forEach(el => {
+    el.addEventListener('input', () => {
+      const idx = parseInt(el.dataset.idx);
+      const field = el.dataset.field;
+      const scene = cfg.scenes[idx];
+      if (field === 'dur') {
+        const v = parseFloat(el.value);
+        if (!isNaN(v) && v > 0) {
+          scene.dur = v;
+          // Recalc starts (TOTAL() is live)
+          recalcStarts();
+          renderMarkers();
+          updateTimeUI();
+        }
+      } else {
+        scene[field] = el.value;
+      }
+    });
+  });
+}
+function updateActiveScene() {
+  const active = findScene(elapsed);
+  scenesPanel.querySelectorAll('.scene-item').forEach(item => {
+    const idx = parseInt(item.dataset.idx);
+    if (cfg.scenes[idx] === active) item.classList.add('active');
+    else item.classList.remove('active');
+  });
+  // Update titles to reflect any edits
+  scenesPanel.querySelectorAll('.scene-item').forEach(item => {
+    const idx = parseInt(item.dataset.idx);
+    const title = item.querySelector('.scene-title');
+    const dur = item.querySelector('.scene-dur');
+    if (title) title.textContent = cfg.scenes[idx].head;
+    if (dur) dur.textContent = cfg.scenes[idx].dur + 's';
+  });
+}
+renderScenesPanel();
+
+// ============================================================
+// UI: Style tab
+// ============================================================
+document.getElementById('brandColor').addEventListener('input', e => cfg.brandColor = e.target.value);
+document.getElementById('accentColor').addEventListener('input', e => cfg.accentColor = e.target.value);
+document.getElementById('bgType').addEventListener('change', e => cfg.bgType = e.target.value);
+document.getElementById('tilt3D').addEventListener('input', e => {
+  const v = parseInt(e.target.value);
+  cfg.tilt3D = (v / 100);
+  document.getElementById('tilt3DVal').textContent = v;
+});
+document.getElementById('zoomIntensity').addEventListener('input', e => {
+  const v = parseInt(e.target.value);
+  cfg.zoom = v / 100;
+  document.getElementById('zoomIntensityVal').textContent = v + '%';
+});
+document.getElementById('textStyle').addEventListener('change', e => cfg.textStyle = e.target.value);
+
+// ============================================================
+// UI: Audio tab
+// ============================================================
+document.querySelectorAll('.switch').forEach(sw => {
+  sw.addEventListener('click', () => {
+    const key = sw.dataset.sfx;
+    sw.classList.toggle('on');
+    const on = sw.classList.contains('on');
+    if (key === 'bgm') {
+      cfg.sfx.bgm = on;
+      if (on && playing) startBGM();
+      else stopBGM();
+    } else {
+      cfg.sfx[key] = on;
+    }
+  });
+});
+document.getElementById('sfxVol').addEventListener('input', e => {
+  const v = parseInt(e.target.value);
+  cfg.sfxVol = v / 100;
+  document.getElementById('sfxVolVal').textContent = v;
+});
+
+// ============================================================
+// UI: Export
+// ============================================================
+const recordBtn = document.getElementById('recordBtn');
+const progressEl = document.getElementById('progress');
+const progressBar = document.getElementById('progressBar');
+const downloadBtn = document.getElementById('downloadBtn');
+let lastBlob = null;
+let lastExt = 'webm';
+
+recordBtn.addEventListener('click', async () => {
+  if (recording) return;
+  const resSel = document.getElementById('exportRes').value;
+  const [ew, eh] = resSel.split('x').map(n => parseInt(n));
+  const fps = parseInt(document.getElementById('exportFps').value);
+
+  // Resize canvas to HD
+  const origW = stage.width, origH = stage.height;
+  stage.width = ew; stage.height = eh;
+
+  // Pick mime type
+  const mimeOptions = [
+    'video/mp4;codecs=avc1',
+    'video/mp4',
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm',
+  ];
+  let mimeType = '';
+  for (const m of mimeOptions) {
+    if (MediaRecorder.isTypeSupported(m)) { mimeType = m; break; }
+  }
+  if (!mimeType) {
+    alert('MediaRecorder not supported in this browser.');
+    stage.width = origW; stage.height = origH;
+    return;
+  }
+  lastExt = mimeType.startsWith('video/mp4') ? 'mp4' : 'webm';
+
+  const stream = stage.captureStream(fps);
+  const chunks = [];
+  const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 8_000_000 });
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: mimeType });
+    lastBlob = blob;
+    downloadBtn.disabled = false;
+    recordBtn.textContent = 'Record and Export';
+    recordBtn.classList.remove('btn-record');
+    recordBtn.classList.add('btn-record');
+    recording = false;
+    progressEl.style.display = 'none';
+
+    // Restore preview size
+    stage.width = origW;
+    stage.height = origH;
+    elapsed = 0; prevElapsed = 0;
+
+    // Auto-download
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tabletap-reel.${lastExt}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  };
+
+  recording = true;
+  recordBtn.textContent = 'Recording...';
+  progressEl.style.display = 'block';
+  progressBar.style.width = '0%';
+
+  recorder.start(200);
+  elapsed = 0; prevElapsed = 0; playing = true;
+  updatePlayButton();
+
+  // Progress poll
+  const total = cfg.scenes.reduce((a,s)=>a+s.dur, 0);
+  const iv = setInterval(() => {
+    progressBar.style.width = ((elapsed / total) * 100) + '%';
+    if (elapsed >= total) {
+      clearInterval(iv);
+      setTimeout(() => {
+        if (recorder.state !== 'inactive') recorder.stop();
+        playing = false;
+        updatePlayButton();
+      }, 500);
+    }
+  }, 100);
+});
+
+downloadBtn.addEventListener('click', () => {
+  if (!lastBlob) return;
+  const url = URL.createObjectURL(lastBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `tabletap-reel.${lastExt}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+});
+
+// ============================================================
+// Keyboard shortcuts
+// ============================================================
+window.addEventListener('keydown', (e) => {
+  if (e.target.matches('input, textarea, select')) return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    playBtn.click();
+  } else if (e.code === 'KeyR') {
+    restartBtn.click();
+  }
+});
+
+// Initial frame
+renderFrame(ctx, 0);
+updateTimeUI();
+</script>
+</body>
+</html>
