@@ -17,6 +17,9 @@ public interface CustomerOrderingService {
     /** Validates and prices the cart server-side, then opens a payment with the restaurant's provider account. */
     CheckoutResponse startCheckout(StartCheckoutRequest request);
 
+    /** Validates the cart, records a cash payment, and immediately places the order. */
+    CheckoutStatusResponse payCash(StartCheckoutRequest request);
+
     /** Forwards the provider checkout result for server-side verification. */
     CheckoutStatusResponse confirmPayment(UUID checkoutId, ClientPaymentConfirmation confirmation);
 

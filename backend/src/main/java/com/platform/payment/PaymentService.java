@@ -22,6 +22,9 @@ public interface PaymentService {
 
     PaymentInitiation initiate(InitiatePaymentCommand command);
 
+    /** Records a cash payment (no gateway). Returns the new payment's id. */
+    UUID initiateCash(UUID restaurantId, UUID checkoutSessionId, java.math.BigDecimal amount, String currency);
+
     /** Verifies the browser-reported result against the provider and updates the payment. Idempotent. */
     PaymentView confirm(UUID paymentId, ClientPaymentConfirmation confirmation);
 

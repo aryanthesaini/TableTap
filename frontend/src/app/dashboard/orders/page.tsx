@@ -167,7 +167,7 @@ function Ticket({ order, onOpen }: { order: Order; onOpen: (o: Order) => void })
         )}
       </button>
       <div className="flex items-center justify-between gap-2 border-t border-border px-4 py-2.5">
-        <span className="tabular text-[13px] text-muted">{money(order.totalAmount, order.currency)} · <span className="text-success">Paid</span></span>
+        <span className="tabular text-[13px] text-muted">{money(order.totalAmount, order.currency)} · <span className={order.paymentStatus === "CASH" ? "text-warning" : "text-success"}>{order.paymentStatus === "CASH" ? "Cash" : "Paid"}</span></span>
         <Button size="sm" variant="primary" loading={markServed.isPending} onClick={() => markServed.mutate(order)}>
           <Check /> Served
         </Button>

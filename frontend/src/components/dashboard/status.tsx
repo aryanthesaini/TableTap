@@ -9,10 +9,10 @@ export function OrderStatusBadge({ status }: { status: OrderStatus }) {
 }
 
 const PAYMENT_TONE: Record<PaymentStatus, "success" | "warning" | "danger" | "neutral" | "info"> = {
-  CAPTURED: "success", PENDING: "warning", CREATED: "neutral", FAILED: "danger", REFUNDED: "info",
+  CAPTURED: "success", PENDING: "warning", CREATED: "neutral", FAILED: "danger", REFUNDED: "info", CASH: "warning",
 };
 const PAYMENT_LABEL: Record<PaymentStatus, string> = {
-  CAPTURED: "Paid", PENDING: "Pending", CREATED: "Initiated", FAILED: "Failed", REFUNDED: "Refunded",
+  CAPTURED: "Paid", PENDING: "Pending", CREATED: "Initiated", FAILED: "Failed", REFUNDED: "Refunded", CASH: "Cash",
 };
 
 export function PaymentStatusBadge({ status }: { status: PaymentStatus }) {

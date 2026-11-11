@@ -101,6 +101,21 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
+    public UUID initiateCash(UUID restaurantId, UUID checkoutSessionId, BigDecimal amount, String currency) {
+        Payment payment = new Payment();
+        payment.setRestaurantId(restaurantId);
+        payment.setCheckoutSessionId(checkoutSessionId);
+        payment.setProvider("CASH");
+        payment.setProviderOrderId("cash-" + checkoutSessionId);
+        payment.setAmount(amount);
+        payment.setCurrency(currency);
+        payment.setStatus(PaymentStatus.CASH);
+        payment.setCapturedAt(clock.instant());
+        return paymentRepository.save(payment).getId();
+    }
+
+    @Override
+    @Transactional
     public PaymentView confirm(UUID paymentId, ClientPaymentConfirmation confirmation) {
         Payment payment = lock(paymentId);
         MerchantCredentials credentials = credentials(configurationFor(payment.getRestaurantId()));

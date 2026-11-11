@@ -3,7 +3,7 @@
 export type Role = "OWNER" | "STAFF" | "PLATFORM_ADMIN";
 export type Dietary = "VEG" | "NON_VEG" | "EGG";
 export type OrderStatus = "PENDING" | "SERVED";
-export type PaymentStatus = "CREATED" | "PENDING" | "CAPTURED" | "FAILED" | "REFUNDED";
+export type PaymentStatus = "CREATED" | "PENDING" | "CAPTURED" | "FAILED" | "REFUNDED" | "CASH";
 export type CheckoutStatus = "OPEN" | "COMPLETED" | "FAILED" | "EXPIRED";
 
 export interface User {

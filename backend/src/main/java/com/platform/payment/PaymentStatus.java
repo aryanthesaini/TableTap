@@ -7,9 +7,11 @@ public enum PaymentStatus {
     PENDING,
     CAPTURED,
     FAILED,
-    REFUNDED;
+    REFUNDED,
+    /** Customer chose to pay at the counter with cash — no gateway involved. */
+    CASH;
 
     public boolean isFinal() {
-        return this == CAPTURED || this == FAILED || this == REFUNDED;
+        return this == CAPTURED || this == FAILED || this == REFUNDED || this == CASH;
     }
 }

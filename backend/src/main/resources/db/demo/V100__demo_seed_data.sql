@@ -22,11 +22,11 @@ VALUES
      'Coastal · Seafood', '/images/logos/coastal-curry-co.svg', '#0F766E',
      '14 Chapel Road, Bandra West', 'Mumbai', 'Maharashtra', '400050', '+91 98200 13579',
      'table@coastalcurry.in', 'ACTIVE', true, 'INR', 'GST', 5.00),
-    ('a1000000-0000-4000-8000-000000000003', 'wok-and-tandoor', 'Wok & Tandoor',
-     'Indo-Chinese street favourites and smoky tandoor grills, done fast.',
-     'Indo-Chinese · Grills', '/images/logos/wok-and-tandoor.svg', '#B91C1C',
-     '100 Feet Road, HAL 2nd Stage, Indiranagar', 'Bengaluru', 'Karnataka', '560038', '+91 98450 11223',
-     'orders@wokandtandoor.in', 'ACTIVE', true, 'INR', 'GST', 5.00);
+    ('a1000000-0000-4000-8000-000000000003', 'woodpecker-cafe', 'The Woodpecker Cafe',
+     'Seoul-inspired noodles, wood-fired pizza and specialty coffee — comfort food at its best.',
+     'Korean Fusion · Café', '/images/logos/woodpecker-cafe.svg', '#2F5016',
+     '12 Church Street, MG Road', 'Bengaluru', 'Karnataka', '560001', '+91 98450 77889',
+     'hello@woodpeckercafe.in', 'ACTIVE', true, 'INR', 'GST', 5.00);
 
 -- ---------------------------------------------------------------------
 -- Users (password: demo1234)
@@ -37,8 +37,8 @@ INSERT INTO app_user (restaurant_id, email, password_hash, full_name, role) VALU
     ('a1000000-0000-4000-8000-000000000001', 'staff@saffrontable.in', '$2b$10$0cZz6VZvOqhbFrjeLKpZYeT6rl2kdp/GBs3XO34vZDgE.z4G2c1XS', 'Priya Sharma', 'STAFF'),
     ('a1000000-0000-4000-8000-000000000002', 'owner@coastalcurry.in', '$2b$10$0cZz6VZvOqhbFrjeLKpZYeT6rl2kdp/GBs3XO34vZDgE.z4G2c1XS', 'Anita D''Souza', 'OWNER'),
     ('a1000000-0000-4000-8000-000000000002', 'staff@coastalcurry.in', '$2b$10$0cZz6VZvOqhbFrjeLKpZYeT6rl2kdp/GBs3XO34vZDgE.z4G2c1XS', 'Joel Fernandes', 'STAFF'),
-    ('a1000000-0000-4000-8000-000000000003', 'owner@wokandtandoor.in', '$2b$10$0cZz6VZvOqhbFrjeLKpZYeT6rl2kdp/GBs3XO34vZDgE.z4G2c1XS', 'Karthik Rao', 'OWNER'),
-    ('a1000000-0000-4000-8000-000000000003', 'staff@wokandtandoor.in', '$2b$10$0cZz6VZvOqhbFrjeLKpZYeT6rl2kdp/GBs3XO34vZDgE.z4G2c1XS', 'Meera Iyer', 'STAFF');
+    ('a1000000-0000-4000-8000-000000000003', 'owner@woodpeckercafe.in', '$2b$10$0cZz6VZvOqhbFrjeLKpZYeT6rl2kdp/GBs3XO34vZDgE.z4G2c1XS', 'Simran Kaur', 'OWNER'),
+    ('a1000000-0000-4000-8000-000000000003', 'staff@woodpeckercafe.in', '$2b$10$0cZz6VZvOqhbFrjeLKpZYeT6rl2kdp/GBs3XO34vZDgE.z4G2c1XS', 'Himani Agarwal', 'STAFF');
 
 -- ---------------------------------------------------------------------
 -- Payment configuration (mock Razorpay test keys)
@@ -46,7 +46,7 @@ INSERT INTO app_user (restaurant_id, email, password_hash, full_name, role) VALU
 INSERT INTO payment_configuration (restaurant_id, provider, mode, status, key_id, key_secret, webhook_secret, connected_at) VALUES
     ('a1000000-0000-4000-8000-000000000001', 'RAZORPAY', 'TEST', 'ACTIVE', 'rzp_test_SaffronT4bl3', 'sk_demo_saffron_9f2a41c7', 'whsec_demo_saffron', now() - interval '60 days'),
     ('a1000000-0000-4000-8000-000000000002', 'RAZORPAY', 'TEST', 'ACTIVE', 'rzp_test_CoastalCurry', 'sk_demo_coastal_3b7e9d10', 'whsec_demo_coastal', now() - interval '45 days'),
-    ('a1000000-0000-4000-8000-000000000003', 'RAZORPAY', 'TEST', 'ACTIVE', 'rzp_test_WokTandoor88', 'sk_demo_wok_51c08e2f', 'whsec_demo_wok', now() - interval '20 days');
+    ('a1000000-0000-4000-8000-000000000003', 'RAZORPAY', 'TEST', 'ACTIVE', 'rzp_test_Woodpecker11', 'sk_demo_wpk_7a3c91d4', 'whsec_demo_wpk', now() - interval '20 days');
 
 -- ---------------------------------------------------------------------
 -- Tables (QR tokens are deterministic for the demo; new tables get random tokens)
@@ -64,10 +64,10 @@ JOIN LATERAL (
         ('coastal-curry-co', 'Table 4', 4, 4), ('coastal-curry-co', 'Table 5', 6, 5), ('coastal-curry-co', 'Table 6', 6, 6),
         ('coastal-curry-co', 'Table 7', 2, 7), ('coastal-curry-co', 'Table 8', 4, 8), ('coastal-curry-co', 'Patio 1', 4, 9),
         ('coastal-curry-co', 'Patio 2', 4, 10),
-        ('wok-and-tandoor', 'Table 1', 2, 1), ('wok-and-tandoor', 'Table 2', 2, 2), ('wok-and-tandoor', 'Table 3', 4, 3),
-        ('wok-and-tandoor', 'Table 4', 4, 4), ('wok-and-tandoor', 'Table 5', 4, 5), ('wok-and-tandoor', 'Table 6', 4, 6),
-        ('wok-and-tandoor', 'Table 7', 6, 7), ('wok-and-tandoor', 'Table 8', 6, 8), ('wok-and-tandoor', 'Counter 1', 1, 9),
-        ('wok-and-tandoor', 'Counter 2', 1, 10)
+        ('woodpecker-cafe', 'Table 1', 2, 1), ('woodpecker-cafe', 'Table 2', 2, 2), ('woodpecker-cafe', 'Table 3', 4, 3),
+        ('woodpecker-cafe', 'Table 4', 4, 4), ('woodpecker-cafe', 'Table 5', 4, 5), ('woodpecker-cafe', 'Table 6', 4, 6),
+        ('woodpecker-cafe', 'Table 7', 6, 7), ('woodpecker-cafe', 'Table 8', 6, 8), ('woodpecker-cafe', 'Counter 1', 1, 9),
+        ('woodpecker-cafe', 'Counter 2', 1, 10)
     ) AS v(slug, name, seats, ord)
     WHERE v.slug = r.slug
 ) t ON true;
@@ -96,12 +96,18 @@ JOIN LATERAL (
         ('coastal-curry-co', 'Rice and Biryani', NULL, 4),
         ('coastal-curry-co', 'Beverages', NULL, 5),
         ('coastal-curry-co', 'Desserts', NULL, 6),
-        ('wok-and-tandoor', 'Soups', NULL, 1),
-        ('wok-and-tandoor', 'Starters', 'Wok-tossed, high flame', 2),
-        ('wok-and-tandoor', 'Tandoor', 'Charcoal grills', 3),
-        ('wok-and-tandoor', 'Noodles and Rice', NULL, 4),
-        ('wok-and-tandoor', 'Beverages', NULL, 5),
-        ('wok-and-tandoor', 'Desserts', NULL, 6)
+        ('woodpecker-cafe', 'Chef''s Specials', 'Ramyun bowls made fresh to order', 1),
+        ('woodpecker-cafe', 'Korean Specials', NULL, 2),
+        ('woodpecker-cafe', 'Small Plates', NULL, 3),
+        ('woodpecker-cafe', 'Fries & Loaded Fries', NULL, 4),
+        ('woodpecker-cafe', 'Nachos', NULL, 5),
+        ('woodpecker-cafe', 'Pizza', NULL, 6),
+        ('woodpecker-cafe', 'Garlic Bread & Pasta', NULL, 7),
+        ('woodpecker-cafe', 'Sushi', NULL, 8),
+        ('woodpecker-cafe', 'Burgers & Nuggets', NULL, 9),
+        ('woodpecker-cafe', 'Hot Beverages', NULL, 10),
+        ('woodpecker-cafe', 'Cold Beverages', NULL, 11),
+        ('woodpecker-cafe', 'Desserts', NULL, 12)
     ) AS v(slug, name, description, ord)
     WHERE v.slug = r.slug
 ) c ON true;
@@ -174,33 +180,70 @@ FROM (VALUES
     ('coastal-curry-co', 'Desserts', 'Bebinca', 'Layered Goan coconut and egg pudding.', 220, NULL, true, 'EGG', false, 1),
     ('coastal-curry-co', 'Desserts', 'Ukadiche Modak', 'Steamed rice dumplings with coconut and jaggery.', 180, '/images/menu/modak.jpg', true, 'VEG', false, 2),
     ('coastal-curry-co', 'Desserts', 'Elaneer Payasam', 'Tender coconut and milk pudding.', 190, NULL, true, 'VEG', false, 3),
-    -- Wok & Tandoor --------------------------------------------------------
-    ('wok-and-tandoor', 'Soups', 'Hot & Sour Soup', 'Peppery, tangy broth with vegetables and tofu.', 180, '/images/menu/hot-sour-soup.jpg', true, 'VEG', false, 1),
-    ('wok-and-tandoor', 'Soups', 'Sweet Corn Soup', 'Creamy sweet corn with spring onion.', 170, '/images/menu/sweet-corn-soup.jpg', true, 'VEG', false, 2),
-    ('wok-and-tandoor', 'Soups', 'Chicken Manchow Soup', 'Garlicky soy broth topped with crispy noodles.', 210, NULL, true, 'NON_VEG', false, 3),
-    ('wok-and-tandoor', 'Starters', 'Chilli Chicken', 'Crisp chicken tossed with green chilli, capsicum and soy.', 340, '/images/menu/chilli-chicken.jpg', true, 'NON_VEG', true, 1),
-    ('wok-and-tandoor', 'Starters', 'Chilli Paneer', 'Paneer cubes wok-tossed with peppers and spring onion.', 310, '/images/menu/paneer-chilli.jpg', true, 'VEG', true, 2),
-    ('wok-and-tandoor', 'Starters', 'Chicken Momos', 'Steamed dumplings with spicy tomato chutney (8 pcs).', 240, '/images/menu/momos.jpg', true, 'NON_VEG', true, 3),
-    ('wok-and-tandoor', 'Starters', 'Veg Spring Rolls', 'Crisp rolls with cabbage, carrot and glass noodles.', 220, '/images/menu/egg-rolls.jpg', true, 'VEG', false, 4),
-    ('wok-and-tandoor', 'Starters', 'Honey Chilli Potato', 'Crispy potato fingers glazed in honey and chilli.', 230, NULL, true, 'VEG', false, 5),
-    ('wok-and-tandoor', 'Starters', 'Dragon Prawns', 'Prawns in a fiery dragon sauce.', 440, '/images/menu/chilli-prawns.jpg', true, 'NON_VEG', false, 6),
-    ('wok-and-tandoor', 'Tandoor', 'Tandoori Chicken (Half)', 'Classic charcoal-grilled chicken with mint chutney.', 360, '/images/menu/tandoori-chicken.jpg', true, 'NON_VEG', false, 1),
-    ('wok-and-tandoor', 'Tandoor', 'Mutton Seekh Kebab', 'Minced mutton skewers with onion rings.', 420, '/images/menu/seekh-kebab.jpg', true, 'NON_VEG', false, 2),
-    ('wok-and-tandoor', 'Tandoor', 'Tandoori Lamb Chops', 'Four chops in a raw papaya and spice marinade.', 620, '/images/menu/lamb-chops.jpg', true, 'NON_VEG', true, 3),
-    ('wok-and-tandoor', 'Tandoor', 'Achari Paneer Tikka', 'Paneer in a pickling-spice marinade.', 320, NULL, true, 'VEG', false, 4),
-    ('wok-and-tandoor', 'Noodles and Rice', 'Veg Hakka Noodles', 'Wok-tossed noodles with crunchy vegetables.', 240, '/images/menu/hakka-noodles.jpg', true, 'VEG', false, 1),
-    ('wok-and-tandoor', 'Noodles and Rice', 'Chicken Fried Rice', 'Egg and chicken fried rice, high-flame.', 290, '/images/menu/chicken-fried-rice.jpg', true, 'NON_VEG', false, 2),
-    ('wok-and-tandoor', 'Noodles and Rice', 'Burnt Garlic Prawn Rice', 'Fried rice with prawns and toasted garlic.', 360, '/images/menu/prawn-fried-rice.jpg', true, 'NON_VEG', false, 3),
-    ('wok-and-tandoor', 'Noodles and Rice', 'Schezwan Fried Rice', 'Spicy Schezwan rice with vegetables.', 260, NULL, true, 'VEG', false, 4),
-    ('wok-and-tandoor', 'Noodles and Rice', 'Veg Manchurian Gravy', 'Vegetable dumplings in a soy-garlic gravy.', 270, NULL, true, 'VEG', false, 5),
-    ('wok-and-tandoor', 'Beverages', 'Virgin Mojito', 'Mint, lime and soda.', 170, NULL, true, 'VEG', false, 1),
-    ('wok-and-tandoor', 'Beverages', 'Iced Lemon Tea', 'House-brewed and lightly sweetened.', 140, NULL, true, 'VEG', false, 2),
-    ('wok-and-tandoor', 'Beverages', 'Cold Coffee', 'Blended with vanilla ice cream.', 170, NULL, true, 'VEG', false, 3),
-    ('wok-and-tandoor', 'Beverages', 'Masala Coke', 'Coke with chaat masala and lime.', 110, NULL, true, 'VEG', false, 4),
-    ('wok-and-tandoor', 'Desserts', 'Sizzling Brownie', 'Walnut brownie on a hot plate with vanilla ice cream.', 260, '/images/menu/brownie.jpg', true, 'EGG', true, 1),
-    ('wok-and-tandoor', 'Desserts', 'Baked Cheesecake', 'New York-style, with berry compote.', 280, '/images/menu/cheesecake.jpg', true, 'EGG', false, 2),
-    ('wok-and-tandoor', 'Desserts', 'Darsaan with Ice Cream', 'Honey-glazed fried noodles with sesame.', 220, NULL, true, 'VEG', false, 3),
-    ('wok-and-tandoor', 'Desserts', 'Date Pancake', 'Crisp pancake stuffed with dates, served with ice cream.', 230, NULL, false, 'VEG', false, 4)
+    -- The Woodpecker Cafe --------------------------------------------------
+    ('woodpecker-cafe', 'Chef''s Specials', 'Carbonara Ramyun', 'Creamy carbonara broth with ramen noodles.', 220, NULL, true, 'VEG', true, 1),
+    ('woodpecker-cafe', 'Chef''s Specials', 'Spicy Kimchi Ramyun', 'Fiery kimchi broth with pork and ramen noodles.', 220, NULL, true, 'NON_VEG', true, 2),
+    ('woodpecker-cafe', 'Chef''s Specials', 'Tan Tan Ramyun', 'Sesame and chilli broth inspired by Dan Dan noodles.', 220, NULL, true, 'VEG', false, 3),
+    ('woodpecker-cafe', 'Korean Specials', 'Korean Gochujang Noodles', 'Stir-fried noodles in spicy gochujang sauce.', 150, NULL, true, 'VEG', false, 1),
+    ('woodpecker-cafe', 'Korean Specials', 'Rice Paper Dumplings', 'Steamed dumplings wrapped in translucent rice paper.', 180, NULL, true, 'VEG', false, 2),
+    ('woodpecker-cafe', 'Korean Specials', 'Crystal Dumplings', 'Glass noodle and vegetable dumplings, pan-fried.', 200, NULL, true, 'VEG', false, 3),
+    ('woodpecker-cafe', 'Small Plates', 'Chilli Potato', 'Crispy potato tossed in chilli soy glaze.', 160, NULL, true, 'VEG', false, 1),
+    ('woodpecker-cafe', 'Small Plates', 'Chilli Paneer (8 pcs)', 'Cottage cheese wok-tossed with peppers and spring onion.', 180, NULL, true, 'VEG', false, 2),
+    ('woodpecker-cafe', 'Fries & Loaded Fries', 'Classic Fries', NULL, 120, NULL, true, 'VEG', false, 1),
+    ('woodpecker-cafe', 'Fries & Loaded Fries', 'Cheese Fries', NULL, 150, NULL, true, 'VEG', false, 2),
+    ('woodpecker-cafe', 'Fries & Loaded Fries', 'Peri Peri Fries', NULL, 130, NULL, true, 'VEG', false, 3),
+    ('woodpecker-cafe', 'Fries & Loaded Fries', 'Pizza Fries', NULL, 150, NULL, true, 'VEG', false, 4),
+    ('woodpecker-cafe', 'Fries & Loaded Fries', 'Loaded Fries', 'Fries piled with cheese sauce, jalapeños and spring onion.', 210, NULL, true, 'VEG', true, 5),
+    ('woodpecker-cafe', 'Nachos', 'Cheese Nachos', 'Tortilla chips with house cheese sauce.', 200, NULL, true, 'VEG', false, 1),
+    ('woodpecker-cafe', 'Nachos', 'Loaded Nachos', 'Nachos with salsa, sour cream, jalapeños and cheese.', 210, NULL, true, 'VEG', false, 2),
+    ('woodpecker-cafe', 'Pizza', 'Margherita', 'Classic tomato base with mozzarella.', 140, NULL, true, 'VEG', false, 1),
+    ('woodpecker-cafe', 'Pizza', 'Onion Capsicum', NULL, 150, NULL, true, 'VEG', false, 2),
+    ('woodpecker-cafe', 'Pizza', 'Corn Delight', NULL, 150, NULL, true, 'VEG', false, 3),
+    ('woodpecker-cafe', 'Pizza', 'Paneer Paradise', NULL, 150, NULL, true, 'VEG', false, 4),
+    ('woodpecker-cafe', 'Pizza', 'Woodpecker Special', 'The house pizza — chef''s secret blend of toppings.', 180, NULL, true, 'VEG', true, 5),
+    ('woodpecker-cafe', 'Pizza', 'Chicken Onion', NULL, 200, NULL, true, 'NON_VEG', false, 6),
+    ('woodpecker-cafe', 'Pizza', 'Chicken Delight', NULL, 250, NULL, true, 'NON_VEG', false, 7),
+    ('woodpecker-cafe', 'Garlic Bread & Pasta', 'Cheese Corn Garlic Bread', NULL, 140, NULL, true, 'VEG', false, 1),
+    ('woodpecker-cafe', 'Garlic Bread & Pasta', 'Loaded Garlic Bread', 'Garlic bread topped with cheese, olives and jalapeños.', 150, NULL, true, 'VEG', false, 2),
+    ('woodpecker-cafe', 'Garlic Bread & Pasta', 'White Sauce Pasta', NULL, 190, NULL, true, 'VEG', false, 3),
+    ('woodpecker-cafe', 'Garlic Bread & Pasta', 'Alfredo Pasta', 'Creamy Alfredo with mushrooms.', 220, NULL, true, 'VEG', false, 4),
+    ('woodpecker-cafe', 'Garlic Bread & Pasta', 'Red Sauce Pasta', NULL, 190, NULL, true, 'VEG', false, 5),
+    ('woodpecker-cafe', 'Garlic Bread & Pasta', 'Mix Sauce Pasta', 'Half white, half red — the best of both.', 200, NULL, true, 'VEG', false, 6),
+    ('woodpecker-cafe', 'Sushi', 'Woodpecker Sushi', 'House roll with avocado, cucumber and cream cheese.', 250, NULL, true, 'VEG', true, 1),
+    ('woodpecker-cafe', 'Sushi', 'Baby Corn Tempura Sushi', 'Tempura baby corn roll with sriracha mayo.', 250, NULL, true, 'VEG', false, 2),
+    ('woodpecker-cafe', 'Sushi', 'Fried Chicken Sushi', 'Crispy chicken roll with spicy mayo.', 300, NULL, true, 'NON_VEG', false, 3),
+    ('woodpecker-cafe', 'Burgers & Nuggets', 'Aloo Patty Burger', NULL, 75, NULL, true, 'VEG', false, 1),
+    ('woodpecker-cafe', 'Burgers & Nuggets', 'Veggie Delight Burger', NULL, 85, NULL, true, 'VEG', false, 2),
+    ('woodpecker-cafe', 'Burgers & Nuggets', 'Chicken Burger', NULL, 120, NULL, true, 'NON_VEG', false, 3),
+    ('woodpecker-cafe', 'Burgers & Nuggets', 'Crispy Chicken Burger', NULL, 120, NULL, true, 'NON_VEG', false, 4),
+    ('woodpecker-cafe', 'Burgers & Nuggets', 'Chicken Nuggets', NULL, 180, NULL, true, 'NON_VEG', false, 5),
+    ('woodpecker-cafe', 'Burgers & Nuggets', 'Peri Peri Nuggets', NULL, 200, NULL, true, 'NON_VEG', false, 6),
+    ('woodpecker-cafe', 'Hot Beverages', 'Americano', NULL, 109, NULL, true, 'VEG', false, 1),
+    ('woodpecker-cafe', 'Hot Beverages', 'Cappuccino', NULL, 109, NULL, true, 'VEG', false, 2),
+    ('woodpecker-cafe', 'Hot Beverages', 'Latte', NULL, 109, NULL, true, 'VEG', false, 3),
+    ('woodpecker-cafe', 'Hot Beverages', 'Mocha', NULL, 109, NULL, true, 'VEG', false, 4),
+    ('woodpecker-cafe', 'Hot Beverages', 'Hot Chocolate', NULL, 130, NULL, true, 'VEG', true, 5),
+    ('woodpecker-cafe', 'Hot Beverages', 'Strawberry Latte', NULL, 180, NULL, true, 'VEG', false, 6),
+    ('woodpecker-cafe', 'Cold Beverages', 'Green Tea', NULL, 99, NULL, true, 'VEG', false, 1),
+    ('woodpecker-cafe', 'Cold Beverages', 'Ginger Tea', NULL, 99, NULL, true, 'VEG', false, 2),
+    ('woodpecker-cafe', 'Cold Beverages', 'Masala Tea', NULL, 99, NULL, true, 'VEG', false, 3),
+    ('woodpecker-cafe', 'Cold Beverages', 'Lemon Tea', NULL, 99, NULL, true, 'VEG', false, 4),
+    ('woodpecker-cafe', 'Cold Beverages', 'Iced Tea', NULL, 150, NULL, true, 'VEG', false, 5),
+    ('woodpecker-cafe', 'Cold Beverages', 'Cold Coffee', NULL, 160, NULL, true, 'VEG', false, 6),
+    ('woodpecker-cafe', 'Cold Beverages', 'Strawberry Cold Coffee', NULL, 180, NULL, true, 'VEG', false, 7),
+    ('woodpecker-cafe', 'Cold Beverages', 'Hazelnut Cold Coffee', NULL, 180, NULL, true, 'VEG', false, 8),
+    ('woodpecker-cafe', 'Cold Beverages', 'Virgin Mojito', 'Mint, lime and soda.', 150, NULL, true, 'VEG', false, 9),
+    ('woodpecker-cafe', 'Cold Beverages', 'Green Apple Mojito', NULL, 150, NULL, true, 'VEG', true, 10),
+    ('woodpecker-cafe', 'Cold Beverages', 'Spicy Mango Mojito', NULL, 150, NULL, true, 'VEG', false, 11),
+    ('woodpecker-cafe', 'Cold Beverages', 'Blackcurrant Mojito', NULL, 150, NULL, true, 'VEG', false, 12),
+    ('woodpecker-cafe', 'Cold Beverages', 'Strawberry Shake', NULL, 160, NULL, true, 'VEG', false, 13),
+    ('woodpecker-cafe', 'Cold Beverages', 'Kitkat Shake', NULL, 160, NULL, true, 'VEG', false, 14),
+    ('woodpecker-cafe', 'Cold Beverages', 'Oreo Shake', NULL, 160, NULL, true, 'VEG', false, 15),
+    ('woodpecker-cafe', 'Cold Beverages', 'Banana Milkshake', NULL, 150, NULL, true, 'VEG', false, 16),
+    ('woodpecker-cafe', 'Desserts', 'Chocolate Brownie', 'Warm fudge brownie with a scoop of vanilla ice cream.', 120, '/images/menu/brownie.jpg', true, 'EGG', true, 1),
+    ('woodpecker-cafe', 'Desserts', 'Choco Lava Cake', 'Molten chocolate cake with vanilla ice cream.', 150, NULL, true, 'EGG', false, 2),
+    ('woodpecker-cafe', 'Desserts', 'Biscoff Cheesecake', 'No-bake cheesecake with Lotus Biscoff base.', 160, '/images/menu/cheesecake.jpg', true, 'EGG', false, 3),
+    ('woodpecker-cafe', 'Desserts', 'Waffle with Ice Cream', 'Crisp waffle with two scoops and chocolate drizzle.', 160, NULL, true, 'EGG', true, 4)
 ) AS i(slug, category, name, description, price, image, available, dietary, featured, ord)
 JOIN restaurant r ON r.slug = i.slug
 JOIN menu_category c ON c.restaurant_id = r.id AND c.name = i.category;

@@ -2,7 +2,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Clock3, Loader2, ShieldCheck, ShoppingBag, XCircle } from "lucide-react";
+import { ArrowLeft, Banknote, Clock3, Loader2, ShieldCheck, ShoppingBag, XCircle } from "lucide-react";
 import { api, ApiError, errorMessage } from "@/lib/api";
 import { useCart } from "@/lib/cart";
 import { money } from "@/lib/format";
@@ -19,6 +19,7 @@ import { placedOrders, useStorefront } from "@/components/storefront/use-storefr
 type Phase =
   | { kind: "review" }
   | { kind: "starting" }
+  | { kind: "cash-starting" }
   | { kind: "gateway"; checkout: Checkout }
   | { kind: "paying"; checkout: Checkout }
   | { kind: "verifying"; checkout: Checkout }
@@ -64,6 +65,26 @@ export default function CheckoutPage() {
     } catch (e) {
       setPhase({ kind: "review" });
       setError(errorMessage(e, "Couldn't start payment. Please try again."));
+      if (e instanceof ApiError && (e.code === "ITEM_UNAVAILABLE" || e.code === "ITEM_NOT_FOUND" || e.code === "ORDERING_UNAVAILABLE")) storefront.refetch();
+    }
+  }
+
+  async function payCash() {
+    setError(null);
+    setPhase({ kind: "cash-starting" });
+    try {
+      const status = await api<CheckoutStatusResponse>("/public/checkout/pay-cash", {
+        method: "POST", auth: false,
+        body: { restaurantSlug: slug, tableToken: token, items: cart.lines.map((l) => ({ menuItemId: l.id, quantity: l.quantity })), note: cart.note || null },
+      });
+      if (status.status === "COMPLETED" && status.orderId) {
+        placedOrders.add(token, status.orderId, status.orderNumber!);
+        cart.clear();
+        router.replace(`/r/${slug}/t/${token}/orders/${status.orderId}`);
+      }
+    } catch (e) {
+      setPhase({ kind: "review" });
+      setError(errorMessage(e, "Couldn't place order. Please try again."));
       if (e instanceof ApiError && (e.code === "ITEM_UNAVAILABLE" || e.code === "ITEM_NOT_FOUND" || e.code === "ORDERING_UNAVAILABLE")) storefront.refetch();
     }
   }
@@ -121,7 +142,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const busy = phase.kind === "starting" || phase.kind === "paying" || phase.kind === "verifying";
+  const busy = phase.kind === "starting" || phase.kind === "cash-starting" || phase.kind === "paying" || phase.kind === "verifying";
   const gatewayCheckout = phase.kind === "gateway" || phase.kind === "paying" ? phase.checkout : null;
 
   return (
@@ -184,6 +205,16 @@ export default function CheckoutPage() {
           {phase.kind === "starting" ? <><Loader2 className="size-5 animate-spin" /> Preparing payment…</>
             : problems.length ? "Remove unavailable items to continue"
             : <>Pay <span className="tabular">{money(subtotal + tax, currency, { decimals: true })}</span></>}
+        </button>
+        <div className="relative my-2.5 flex items-center gap-3">
+          <span className="h-px flex-1 bg-border" />
+          <span className="text-[11px] font-medium uppercase tracking-wide text-faint">or</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+        <button onClick={payCash} disabled={busy || problems.length > 0 || !data.orderingEnabled || subtotal <= 0}
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl border border-border bg-white text-sm font-medium text-fg disabled:opacity-40 active:bg-subtle">
+          {phase.kind === "cash-starting" ? <><Loader2 className="size-4 animate-spin" /> Placing order…</>
+            : <><Banknote className="size-4 text-muted" /> Pay at counter (Cash)</>}
         </button>
       </div>
 

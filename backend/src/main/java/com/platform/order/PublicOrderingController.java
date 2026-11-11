@@ -45,6 +45,13 @@ public class PublicOrderingController {
         return orderingService.startCheckout(request);
     }
 
+    @Operation(summary = "Pay at counter: validates cart, records cash payment and places order immediately")
+    @PostMapping("/checkout/pay-cash")
+    @ResponseStatus(HttpStatus.CREATED)
+    public CheckoutStatusResponse payCash(@Valid @RequestBody StartCheckoutRequest request) {
+        return orderingService.payCash(request);
+    }
+
     @Operation(summary = "Checkout / payment / order status")
     @GetMapping("/checkout/{checkoutId}")
     public CheckoutStatusResponse checkoutStatus(@PathVariable UUID checkoutId) {

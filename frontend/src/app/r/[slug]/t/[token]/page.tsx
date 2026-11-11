@@ -157,10 +157,11 @@ function Menu({ data, slug, token }: { data: Storefront; slug: string; token: st
           )}
           {categories.map((c) => (
             <section key={c.id} id={`cat-${c.id}`} data-category className="scroll-mt-28 border-b-8 border-[#f6f5f3] last:border-b-0">
-              <div className="px-5 pb-1 pt-6">
+              <div className="flex items-baseline gap-2 px-5 pb-1 pt-6">
                 <h2 className="text-[17px] font-bold tracking-tight">{c.name}</h2>
-                {c.description && <p className="mt-0.5 text-[13px] text-muted">{c.description}</p>}
+                <span className="text-xs text-faint">{c.items.length}</span>
               </div>
+              {c.description && <p className="px-5 pb-1 text-[13px] text-muted">{c.description}</p>}
               <ul className="divide-y divide-dashed divide-black/[0.08] px-5">
                 {c.items.map((i) => (
                   <MenuRow key={i.id} item={i} currency={restaurant.currency} quantity={cart.quantityOf(i.id)} canOrder={canOrder}
@@ -201,33 +202,33 @@ function MenuRow({ item, currency, quantity, canOrder, onOpen, onChange }: {
 }) {
   const soldOut = !item.available;
   const control = !canOrder ? null : soldOut ? (
-    <span className="inline-flex h-9 w-[84px] items-center justify-center rounded-lg bg-subtle text-xs font-semibold uppercase text-faint">Sold out</span>
+    <span className="inline-flex h-9 w-[84px] items-center justify-center rounded-lg bg-subtle text-[11px] font-semibold uppercase tracking-wide text-faint">Sold out</span>
   ) : quantity > 0 ? <Stepper quantity={quantity} onChange={onChange} /> : <AddButton onClick={() => onChange(1)} />;
 
   return (
-    <li className="flex gap-4 py-5">
+    <li className="flex gap-4 py-4">
       <button className="min-w-0 flex-1 text-left" onClick={onOpen}>
         <div className="flex items-center gap-1.5">
           <DietaryMark dietary={item.dietary} />
           {item.featured && (
-            <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-amber-700">
-              <Star className="size-3 fill-amber-500 text-amber-500" /> Bestseller
+            <span className="inline-flex items-center gap-0.5 rounded-sm bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+              <Star className="size-2.5 fill-amber-500 text-amber-500" /> Bestseller
             </span>
           )}
         </div>
         <h3 className={cn("mt-1 text-[15px] font-semibold leading-snug", soldOut && "text-muted")}>{item.name}</h3>
-        <p className="tabular mt-0.5 text-[15px] font-medium">{money(item.price, currency)}</p>
-        {item.description && <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-muted">{item.description}</p>}
+        {item.description && <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-muted">{item.description}</p>}
+        <p className="tabular mt-1.5 text-sm font-semibold text-fg">{money(item.price, currency)}</p>
       </button>
       {item.imageUrl ? (
-        <div className="relative w-[118px] shrink-0 pb-4">
+        <div className="relative w-[108px] shrink-0 pb-4">
           <button onClick={onOpen} className="block w-full" aria-label={`View ${item.name}`}>
             <FoodImage src={item.imageUrl} name={item.name} rounded="rounded-xl" className={cn("aspect-square w-full", soldOut && "opacity-50 grayscale")} />
           </button>
           {control && <div className="absolute inset-x-0 bottom-0 flex justify-center">{control}</div>}
         </div>
       ) : (
-        control && <div className="flex shrink-0 items-center">{control}</div>
+        <div className="flex shrink-0 items-end pb-0.5">{control}</div>
       )}
     </li>
   );

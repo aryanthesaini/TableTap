@@ -36,7 +36,9 @@ export default function OrderConfirmationPage() {
           </div>
           <h1 className="mt-5 text-xl font-bold tracking-tight">{served ? "Enjoy your meal!" : "Order placed"}</h1>
           <p className="mt-1 text-sm text-muted">
-            {served ? `Served at ${clock(o.servedAt)}.` : `Payment received. ${o.restaurantName} is preparing your food.`}
+            {served ? `Served at ${clock(o.servedAt)}.`
+              : o.paymentStatus === "CASH" ? `Pay at the counter when you're ready. ${o.restaurantName} is preparing your food.`
+              : `Payment received. ${o.restaurantName} is preparing your food.`}
           </p>
           <div className="mx-auto mt-6 grid max-w-xs grid-cols-2 divide-x divide-border rounded-2xl border border-border">
             <div className="px-3 py-3"><p className="text-xs text-muted">Order number</p><p className="tabular text-2xl font-bold">#{o.orderNumber}</p></div>
@@ -46,7 +48,7 @@ export default function OrderConfirmationPage() {
 
         <section className="mx-4 mt-4 rounded-2xl bg-white p-5 shadow-xs">
           <ol className="relative space-y-5">
-            <Step done title="Payment confirmed" time={clock(o.createdAt)} />
+            <Step done title={o.paymentStatus === "CASH" ? "Order placed · Pay at counter" : "Payment confirmed"} time={clock(o.createdAt)} />
             <Step done={served} active={!served} icon={ChefHat} title={served ? "Prepared" : "Being prepared"} time={served ? undefined : "Kitchen has your order"} />
             <Step done={served} icon={UtensilsCrossed} title="Served to your table" time={served ? clock(o.servedAt) : undefined} last />
           </ol>
@@ -66,7 +68,7 @@ export default function OrderConfirmationPage() {
           <dl className="tabular mt-3 space-y-1 border-t border-dashed border-black/10 pt-3 text-sm">
             <div className="flex justify-between text-muted"><dt>Item total</dt><dd>{money(o.subtotal, o.currency, { decimals: true })}</dd></div>
             <div className="flex justify-between text-muted"><dt>{o.taxLabel}</dt><dd>{money(o.taxAmount, o.currency, { decimals: true })}</dd></div>
-            <div className="flex justify-between pt-1 font-bold"><dt>Paid online</dt><dd>{money(o.totalAmount, o.currency, { decimals: true })}</dd></div>
+            <div className="flex justify-between pt-1 font-bold"><dt>{o.paymentStatus === "CASH" ? "Pay at counter" : "Paid online"}</dt><dd>{money(o.totalAmount, o.currency, { decimals: true })}</dd></div>
           </dl>
         </section>
 

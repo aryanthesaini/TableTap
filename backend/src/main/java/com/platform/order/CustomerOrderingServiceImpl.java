@@ -13,6 +13,7 @@ import com.platform.order.dto.CustomerOrderResponse;
 import com.platform.order.dto.StartCheckoutRequest;
 import com.platform.order.dto.StorefrontResponse;
 import com.platform.payment.PaymentService;
+import com.platform.payment.PaymentStatus;
 import com.platform.payment.dto.ClientPaymentConfirmation;
 import com.platform.payment.dto.InitiatePaymentCommand;
 import com.platform.payment.dto.PaymentInitiation;
@@ -22,6 +23,7 @@ import com.platform.restaurant.RestaurantStatus;
 import com.platform.restaurant.dto.RestaurantResponse;
 import com.platform.table.TableService;
 import com.platform.table.dto.TableRef;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,17 +48,20 @@ public class CustomerOrderingServiceImpl implements CustomerOrderingService {
     private final PaymentService paymentService;
     private final CheckoutSessionRepository checkoutRepository;
     private final CustomerOrderRepository orderRepository;
+    private final ApplicationEventPublisher events;
 
     public CustomerOrderingServiceImpl(RestaurantService restaurantService, TableService tableService,
                                        MenuService menuService, PaymentService paymentService,
                                        CheckoutSessionRepository checkoutRepository,
-                                       CustomerOrderRepository orderRepository) {
+                                       CustomerOrderRepository orderRepository,
+                                       ApplicationEventPublisher events) {
         this.restaurantService = restaurantService;
         this.tableService = tableService;
         this.menuService = menuService;
         this.paymentService = paymentService;
         this.checkoutRepository = checkoutRepository;
         this.orderRepository = orderRepository;
+        this.events = events;
     }
 
     @Override
@@ -74,7 +79,7 @@ public class CustomerOrderingServiceImpl implements CustomerOrderingService {
                                 i.available(), i.dietary(), i.featured()))
                         .toList()))
                 .toList();
-        String disabledReason = orderingDisabledReason(r, resolved.table());
+        String disabledReason = orderingDisabledReason(r, resolved.table(), true);
         return new StorefrontResponse(
                 new StorefrontResponse.Restaurant(r.slug(), r.name(), r.description(), r.cuisine(), r.logoUrl(),
                         r.coverImageUrl(), r.brandColor(), r.addressLine(), r.city(), r.currency(), r.taxLabel(),
@@ -85,10 +90,102 @@ public class CustomerOrderingServiceImpl implements CustomerOrderingService {
 
     @Override
     @Transactional
+    public CheckoutStatusResponse payCash(StartCheckoutRequest request) {
+        Resolved resolved = resolve(request.restaurantSlug(), request.tableToken());
+        RestaurantResponse restaurant = resolved.restaurant();
+        String disabledReason = orderingDisabledReason(restaurant, resolved.table(), false);
+        if (disabledReason != null) {
+            throw new BusinessRuleException("ORDERING_UNAVAILABLE", disabledReason);
+        }
+
+        Map<UUID, Integer> quantities = new LinkedHashMap<>();
+        request.items().forEach(line -> quantities.merge(line.menuItemId(), line.quantity(), Integer::sum));
+        Map<UUID, MenuItemResponse> menuItems = menuService.findItems(restaurant.id(), quantities.keySet()).stream()
+                .collect(Collectors.toMap(MenuItemResponse::id, Function.identity()));
+
+        List<CheckoutLine> lines = new ArrayList<>();
+        BigDecimal subtotal = BigDecimal.ZERO;
+        for (Map.Entry<UUID, Integer> entry : quantities.entrySet()) {
+            MenuItemResponse item = menuItems.get(entry.getKey());
+            if (item == null) {
+                throw new BusinessRuleException("ITEM_NOT_FOUND", "An item in your cart is no longer on the menu. Please review your cart.");
+            }
+            if (!item.available()) {
+                throw new BusinessRuleException("ITEM_UNAVAILABLE", item.name() + " is sold out right now. Please remove it to continue.");
+            }
+            int quantity = entry.getValue();
+            if (quantity > 20) {
+                throw new BusinessRuleException("QUANTITY_TOO_LARGE", "You can order up to 20 of an item at once");
+            }
+            BigDecimal lineTotal = Money.of(item.price().multiply(BigDecimal.valueOf(quantity)));
+            lines.add(new CheckoutLine(item.id(), item.name(), Money.of(item.price()), quantity, lineTotal,
+                    item.dietary() == null ? null : item.dietary().name()));
+            subtotal = subtotal.add(lineTotal);
+        }
+        subtotal = Money.of(subtotal);
+        if (subtotal.signum() <= 0) {
+            throw new BusinessRuleException("EMPTY_ORDER", "Order total must be greater than zero");
+        }
+        BigDecimal tax = Money.percentage(subtotal, restaurant.taxRatePercent());
+        BigDecimal total = subtotal.add(tax);
+
+        CheckoutSession session = new CheckoutSession();
+        session.setRestaurantId(restaurant.id());
+        session.setTableId(resolved.table().id());
+        session.setCurrency(restaurant.currency());
+        session.setItems(lines);
+        session.setSubtotal(subtotal);
+        session.setTaxAmount(tax);
+        session.setTotalAmount(total);
+        session.setCustomerNote(request.note() == null || request.note().isBlank() ? null : request.note().trim());
+        session = checkoutRepository.save(session);
+
+        UUID paymentId = paymentService.initiateCash(restaurant.id(), session.getId(), total, restaurant.currency());
+
+        String tableName = tableService.find(restaurant.id(), session.getTableId())
+                .map(TableRef::name).orElse("Table");
+
+        CustomerOrder order = new CustomerOrder();
+        order.setRestaurantId(session.getRestaurantId());
+        order.setTableId(session.getTableId());
+        order.setTableName(tableName);
+        order.setOrderNumber(restaurantService.nextOrderNumber(session.getRestaurantId()));
+        order.setCheckoutSessionId(session.getId());
+        order.setStatus(OrderStatus.PENDING);
+        order.setPaymentStatus(PaymentStatus.CASH);
+        order.setCurrency(session.getCurrency());
+        order.setSubtotal(session.getSubtotal());
+        order.setTaxAmount(session.getTaxAmount());
+        order.setTotalAmount(session.getTotalAmount());
+        order.setCustomerNote(session.getCustomerNote());
+        for (CheckoutLine line : session.getItems()) {
+            OrderItem item = new OrderItem();
+            item.setMenuItemId(line.menuItemId());
+            item.setItemName(line.name());
+            item.setUnitPrice(line.unitPrice());
+            item.setQuantity(line.quantity());
+            item.setLineTotal(line.lineTotal());
+            item.setDietary(line.dietary());
+            order.addItem(item);
+        }
+        order = orderRepository.save(order);
+        session.setStatus(CheckoutStatus.COMPLETED);
+
+        paymentService.linkOrder(paymentId, order.getId(), order.getOrderNumber());
+        int itemCount = order.getItems().stream().mapToInt(OrderItem::getQuantity).sum();
+        events.publishEvent(new OrderPlacedEvent(order.getId(), order.getRestaurantId(), order.getOrderNumber(),
+                tableName, order.getTotalAmount(), order.getCurrency().trim(), itemCount));
+
+        return new CheckoutStatusResponse(session.getId(), CheckoutStatus.COMPLETED, PaymentStatus.CASH, null,
+                order.getId(), order.getOrderNumber());
+    }
+
+    @Override
+    @Transactional
     public CheckoutResponse startCheckout(StartCheckoutRequest request) {
         Resolved resolved = resolve(request.restaurantSlug(), request.tableToken());
         RestaurantResponse restaurant = resolved.restaurant();
-        String disabledReason = orderingDisabledReason(restaurant, resolved.table());
+        String disabledReason = orderingDisabledReason(restaurant, resolved.table(), true);
         if (disabledReason != null) {
             throw new BusinessRuleException("ORDERING_UNAVAILABLE", disabledReason);
         }
@@ -210,7 +307,7 @@ public class CustomerOrderingServiceImpl implements CustomerOrderingService {
         return new Resolved(restaurant, table);
     }
 
-    private String orderingDisabledReason(RestaurantResponse restaurant, TableRef table) {
+    private String orderingDisabledReason(RestaurantResponse restaurant, TableRef table, boolean requireOnlinePayment) {
         if (restaurant.status() != RestaurantStatus.ACTIVE) {
             return "This restaurant is not taking orders on TableTap right now.";
         }
@@ -220,7 +317,7 @@ public class CustomerOrderingServiceImpl implements CustomerOrderingService {
         if (!table.active()) {
             return "Ordering is turned off for this table. Please ask the staff for help.";
         }
-        if (!paymentService.isAcceptingPayments(restaurant.id())) {
+        if (requireOnlinePayment && !paymentService.isAcceptingPayments(restaurant.id())) {
             return "Online payment isn't available right now. Please order with the staff.";
         }
         return null;

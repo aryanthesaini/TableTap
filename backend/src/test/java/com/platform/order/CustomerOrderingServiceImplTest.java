@@ -20,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -50,13 +51,14 @@ class CustomerOrderingServiceImplTest {
     @Mock PaymentService paymentService;
     @Mock CheckoutSessionRepository checkoutRepository;
     @Mock CustomerOrderRepository orderRepository;
+    @Mock ApplicationEventPublisher events;
 
     CustomerOrderingServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new CustomerOrderingServiceImpl(restaurantService, tableService, menuService, paymentService,
-                checkoutRepository, orderRepository);
+                checkoutRepository, orderRepository, events);
     }
 
     private void givenOpenTableAndRestaurant() {
