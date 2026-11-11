@@ -3,6 +3,7 @@ package com.platform.analytics;
 import com.platform.analytics.dto.AdminRestaurantResponse;
 import com.platform.analytics.dto.PlatformOverviewResponse;
 import com.platform.analytics.dto.RestaurantOverviewResponse;
+import com.platform.analytics.dto.WeeklyInsightsResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -11,6 +12,8 @@ import java.util.UUID;
 public interface AnalyticsService {
 
     RestaurantOverviewResponse restaurantOverview(UUID restaurantId);
+
+    WeeklyInsightsResponse weeklyInsights(UUID restaurantId);
 
     PlatformOverviewResponse platformOverview();
 

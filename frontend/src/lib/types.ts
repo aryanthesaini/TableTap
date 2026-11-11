@@ -119,6 +119,41 @@ export interface CustomerOrder {
   subtotal: number; taxLabel: string; taxAmount: number; totalAmount: number; createdAt: string; servedAt: string | null;
 }
 
+export interface WeeklyInsights {
+  currency: string;
+  last4Weeks: {
+    weekStart: string;
+    weekEnd: string;
+    orders: number;
+    revenue: number;
+    averageOrderValue: number;
+  }[];
+  dayOfWeek: {
+    dayOfWeek: number;
+    dayName: string;
+    avgOrders: number;
+    avgRevenue: number;
+  }[];
+  heatmap: {
+    dayOfWeek: number;
+    hour: number;
+    avgOrders: number;
+  }[];
+  topItems: {
+    name: string;
+    quantity: number;
+    revenue: number;
+  }[];
+  outliers: {
+    dayOfWeek: number;
+    dayName: string;
+    hour: number;
+    avgOrders: number;
+    hourAvgAcrossDays: number;
+    multiplier: number;
+  }[];
+}
+
 // ---- admin
 export interface PlatformOverview {
   restaurants: number; activeRestaurants: number; suspendedRestaurants: number; ordersToday: number; gmvToday: number;

@@ -3,6 +3,7 @@ package com.platform.analytics;
 import com.platform.analytics.dto.AdminRestaurantResponse;
 import com.platform.analytics.dto.PlatformOverviewResponse;
 import com.platform.analytics.dto.RestaurantOverviewResponse;
+import com.platform.analytics.dto.WeeklyInsightsResponse;
 import com.platform.restaurant.RestaurantService;
 import com.platform.restaurant.RestaurantStatus;
 import com.platform.restaurant.dto.RestaurantResponse;
@@ -20,6 +21,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -111,6 +113,133 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 """, p, (rs, i) -> new RestaurantOverviewResponse.TopItem(rs.getString("name"), rs.getLong("q"), rs.getBigDecimal("r")));
 
         return new RestaurantOverviewResponse(restaurant.currency(), todayStats, hourly, days, topItems);
+    }
+
+    @Override
+    public WeeklyInsightsResponse weeklyInsights(UUID restaurantId) {
+        RestaurantResponse restaurant = restaurantService.get(restaurantId);
+        LocalDate today = LocalDate.now(clock.withZone(zone));
+        // 28 days = exactly 4 occurrences of each day of week — perfect for weekly averages
+        Instant since28 = today.minusDays(27).atStartOfDay(zone).toInstant();
+        Instant w2Start = today.minusDays(20).atStartOfDay(zone).toInstant();
+        Instant w3Start = today.minusDays(13).atStartOfDay(zone).toInstant();
+        Instant w4Start = today.minusDays(6).atStartOfDay(zone).toInstant();
+
+        var p = params(restaurantId)
+                .addValue("since28", ts(since28))
+                .addValue("w2Start", ts(w2Start))
+                .addValue("w3Start", ts(w3Start))
+                .addValue("w4Start", ts(w4Start))
+                .addValue("tz", zone.getId());
+
+        // --- 4-week summaries ---
+        Map<Integer, Long> weekOrders = new HashMap<>();
+        Map<Integer, BigDecimal> weekRevenue = new HashMap<>();
+        jdbc.query("""
+                select case
+                    when created_at >= :w4Start then 4
+                    when created_at >= :w3Start then 3
+                    when created_at >= :w2Start then 2
+                    else 1
+                end as wk,
+                count(*) as orders,
+                coalesce(sum(total_amount), 0) as revenue
+                from customer_order
+                where restaurant_id = :rid and payment_status = 'CAPTURED' and created_at >= :since28
+                group by 1
+                """, p, rs -> {
+            int wk = rs.getInt("wk");
+            weekOrders.put(wk, rs.getLong("orders"));
+            weekRevenue.put(wk, dec(rs.getObject("revenue")));
+        });
+        List<WeeklyInsightsResponse.WeekSummary> last4Weeks = new ArrayList<>();
+        for (int wk = 1; wk <= 4; wk++) {
+            int offset = (4 - wk) * 7;
+            LocalDate weekStart = today.minusDays(offset + 6L);
+            LocalDate weekEnd = today.minusDays(offset);
+            long orders = weekOrders.getOrDefault(wk, 0L);
+            BigDecimal revenue = weekRevenue.getOrDefault(wk, BigDecimal.ZERO);
+            BigDecimal aov = orders == 0 ? BigDecimal.ZERO : revenue.divide(BigDecimal.valueOf(orders), 2, RoundingMode.HALF_UP);
+            last4Weeks.add(new WeeklyInsightsResponse.WeekSummary(weekStart, weekEnd, orders, revenue, aov));
+        }
+
+        // --- Day-of-week pattern (avg over 4 occurrences each) ---
+        String[] dayNames = {"", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
+        Map<Integer, Double> dowOrders = new HashMap<>();
+        Map<Integer, Double> dowRevenue = new HashMap<>();
+        jdbc.query("""
+                select extract(isodow from created_at at time zone :tz)::int as dow,
+                       count(*) / 4.0 as avg_orders,
+                       coalesce(sum(total_amount), 0) / 4.0 as avg_revenue
+                from customer_order
+                where restaurant_id = :rid and payment_status = 'CAPTURED' and created_at >= :since28
+                group by 1
+                """, p, rs -> {
+            int dow = rs.getInt("dow");
+            dowOrders.put(dow, rs.getDouble("avg_orders"));
+            dowRevenue.put(dow, rs.getDouble("avg_revenue"));
+        });
+        List<WeeklyInsightsResponse.DayPattern> dayOfWeek = new ArrayList<>();
+        for (int dow = 1; dow <= 7; dow++) {
+            dayOfWeek.add(new WeeklyInsightsResponse.DayPattern(
+                    dow, dayNames[dow],
+                    dowOrders.getOrDefault(dow, 0.0),
+                    dowRevenue.getOrDefault(dow, 0.0)));
+        }
+
+        // --- Heatmap: day × hour (service hours 11–23) ---
+        Map<String, Double> heatmapRaw = new HashMap<>();
+        jdbc.query("""
+                select extract(isodow from created_at at time zone :tz)::int as dow,
+                       extract(hour from created_at at time zone :tz)::int as hr,
+                       count(*) / 4.0 as avg_orders
+                from customer_order
+                where restaurant_id = :rid and payment_status = 'CAPTURED' and created_at >= :since28
+                group by 1, 2
+                """, p, rs -> {
+            heatmapRaw.put(rs.getInt("dow") + ":" + rs.getInt("hr"), rs.getDouble("avg_orders"));
+        });
+
+        List<WeeklyInsightsResponse.HeatmapCell> heatmap = new ArrayList<>();
+        for (int dow = 1; dow <= 7; dow++) {
+            for (int h = 11; h <= 23; h++) {
+                heatmap.add(new WeeklyInsightsResponse.HeatmapCell(dow, h, heatmapRaw.getOrDefault(dow + ":" + h, 0.0)));
+            }
+        }
+
+        // --- Top 10 items (28 days) ---
+        List<WeeklyInsightsResponse.TopItem> topItems = jdbc.query("""
+                select oi.item_name as name, sum(oi.quantity) as q, sum(oi.line_total) as r
+                from order_item oi join customer_order o on o.id = oi.order_id
+                where o.restaurant_id = :rid and o.payment_status = 'CAPTURED' and o.created_at >= :since28
+                group by oi.item_name order by q desc, r desc limit 10
+                """, p, (rs, i) -> new WeeklyInsightsResponse.TopItem(rs.getString("name"), rs.getLong("q"), dec(rs.getObject("r"))));
+
+        // --- Outliers: (day, hour) cells that are ≥1.5× the global mean for that hour ---
+        // Global mean per hour = average across all 7 days for that hour
+        Map<Integer, Double> hourAvg = new HashMap<>();
+        for (int h = 11; h <= 23; h++) {
+            double total = 0;
+            for (int dow = 1; dow <= 7; dow++) {
+                total += heatmapRaw.getOrDefault(dow + ":" + h, 0.0);
+            }
+            hourAvg.put(h, total / 7.0);
+        }
+        List<WeeklyInsightsResponse.Outlier> outliers = new ArrayList<>();
+        for (int dow = 1; dow <= 7; dow++) {
+            for (int h = 11; h <= 23; h++) {
+                double cellAvg = heatmapRaw.getOrDefault(dow + ":" + h, 0.0);
+                double hAvg = hourAvg.getOrDefault(h, 0.0);
+                if (cellAvg >= 1.5 && hAvg > 0 && cellAvg / hAvg >= 1.5) {
+                    double multiplier = Math.round((cellAvg / hAvg) * 10.0) / 10.0;
+                    outliers.add(new WeeklyInsightsResponse.Outlier(dow, dayNames[dow], h, cellAvg, hAvg, multiplier));
+                }
+            }
+        }
+        outliers.sort(Comparator.comparingDouble(WeeklyInsightsResponse.Outlier::multiplier).reversed());
+        List<WeeklyInsightsResponse.Outlier> topOutliers = outliers.size() > 5 ? outliers.subList(0, 5) : outliers;
+
+        return new WeeklyInsightsResponse(restaurant.currency(), last4Weeks, dayOfWeek, heatmap, topItems, topOutliers);
     }
 
     @Override

@@ -206,7 +206,7 @@ JOIN restaurant r ON r.slug = i.slug
 JOIN menu_category c ON c.restaurant_id = r.id AND c.name = i.category;
 
 -- ---------------------------------------------------------------------
--- Order history: last 7 days, deterministic.
+-- Order history: last 28 days (4 complete weeks) with realistic lunch and dinner peaks.
 -- Each paid order has a COMPLETED checkout session, a CAPTURED payment and order items
 -- with name/price snapshots. A few failed payments (no order) are added for realism.
 -- ---------------------------------------------------------------------
@@ -233,18 +233,35 @@ DECLARE
     d            integer;
     k            integer;
     v_per_day    integer;
+    v_slot_rand  numeric;
+    v_is_weekend boolean;
+    v_actual_dow integer;
 BEGIN
     PERFORM setseed(0.4242);
 
     CREATE TEMP TABLE seed_slot (restaurant_id uuid, created_at timestamptz, failed boolean) ON COMMIT DROP;
 
     FOR r IN SELECT * FROM restaurant ORDER BY slug LOOP
-        -- Historical days: lunch and dinner service between 12:00 and 23:00 local time.
-        FOR d IN 1..6 LOOP
+        -- Historical 27 days (d=1 is yesterday, d=27 is 27 days ago).
+        -- Time distribution: 30% lunch (12:00–14:30), 20% afternoon (14:30–19:00), 50% dinner (19:00–23:00).
+        -- Weekends generate more orders than weekdays.
+        FOR d IN 1..27 LOOP
             v_day_start := (date_trunc('day', now() AT TIME ZONE v_tz) - make_interval(days => d)) AT TIME ZONE v_tz;
-            v_per_day := 9 + floor(random() * 8)::int;
+            -- 0=Sunday, 1=Monday … 6=Saturday in PostgreSQL extract(dow)
+            v_actual_dow := extract(dow from (now() AT TIME ZONE v_tz - make_interval(days => d))::date)::int;
+            v_is_weekend := (v_actual_dow = 0 OR v_actual_dow = 6);
+            v_per_day := CASE WHEN v_is_weekend THEN 16 + floor(random() * 8)::int ELSE 9 + floor(random() * 7)::int END;
             FOR k IN 1..v_per_day LOOP
-                INSERT INTO seed_slot VALUES (r.id, v_day_start + interval '12 hours' + make_interval(mins => floor(random() * 660)::int), random() < 0.06);
+                v_slot_rand := random();
+                INSERT INTO seed_slot VALUES (
+                    r.id,
+                    v_day_start + CASE
+                        WHEN v_slot_rand < 0.30 THEN make_interval(mins => 720  + floor(random() * 150)::int)  -- 12:00–14:30 (lunch)
+                        WHEN v_slot_rand < 0.50 THEN make_interval(mins => 870  + floor(random() * 270)::int)  -- 14:30–19:00 (afternoon)
+                        ELSE                         make_interval(mins => 1140 + floor(random() * 240)::int)  -- 19:00–23:00 (dinner)
+                    END,
+                    random() < 0.06
+                );
             END LOOP;
         END LOOP;
         -- Today: a steady stream over the last few hours, plus a handful in the last 45 minutes (still PENDING).

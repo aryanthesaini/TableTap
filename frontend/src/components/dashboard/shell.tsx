@@ -6,7 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { toast } from "sonner";
 import {
-  ChefHat, CreditCard, LayoutGrid, LogOut, Menu as MenuIcon, QrCode, ReceiptText, Settings, Sparkles, UtensilsCrossed, X,
+  ChefHat, CreditCard, LayoutGrid, LogOut, Menu as MenuIcon, QrCode, ReceiptText, Settings, Sparkles, TrendingUp, UtensilsCrossed, X,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { api, errorMessage } from "@/lib/api";
@@ -26,6 +26,7 @@ const NAV: NavItem[] = [
   { href: "/dashboard/menu", label: "Menu", icon: UtensilsCrossed, roles: ["OWNER", "STAFF"] },
   { href: "/dashboard/menu-import", label: "AI menu upload", icon: Sparkles, roles: ["OWNER"] },
   { href: "/dashboard/payments", label: "Payments", icon: CreditCard, roles: ["OWNER"] },
+  { href: "/dashboard/insights", label: "Insights", icon: TrendingUp, roles: ["OWNER"] },
   { href: "/dashboard/settings", label: "Settings", icon: Settings, roles: ["OWNER", "STAFF"] },
 ];
 

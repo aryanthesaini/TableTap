@@ -1,6 +1,7 @@
 package com.platform.analytics;
 
 import com.platform.analytics.dto.RestaurantOverviewResponse;
+import com.platform.analytics.dto.WeeklyInsightsResponse;
 import com.platform.common.config.OpenApiConfig;
 import com.platform.common.security.CurrentUserProvider;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,5 +29,11 @@ public class AnalyticsController {
     @GetMapping("/overview")
     public RestaurantOverviewResponse overview() {
         return analyticsService.restaurantOverview(currentUser.restaurantId());
+    }
+
+    @Operation(summary = "Weekly insights: 4-week trends, day-of-week pattern, heatmap, top 10 items, outliers")
+    @GetMapping("/weekly")
+    public WeeklyInsightsResponse weekly() {
+        return analyticsService.weeklyInsights(currentUser.restaurantId());
     }
 }

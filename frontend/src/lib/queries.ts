@@ -16,6 +16,7 @@ export const qk = {
   paymentConfig: ["payments", "config"] as const,
   uploads: ["menu-imports"] as const,
   upload: (id: string) => ["menu-imports", id] as const,
+  insights: ["insights", "weekly"] as const,
 };
 
 export function useRestaurant() {
