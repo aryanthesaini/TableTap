@@ -1,0 +1,40 @@
+databases:
+  - name: tabletap-db
+    plan: free
+    databaseName: tabletap
+    user: tabletap
+
+services:
+  - type: web
+    name: tabletap-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: tabletap-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: tabletap-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: tabletap-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: tabletap-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: tabletap-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: APP_PUBLIC_BASE_URL
+        value: https://frontend-btppcg70y-aryan-sainis-projects.vercel.app

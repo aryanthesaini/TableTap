@@ -4,7 +4,7 @@ spring:
   profiles:
     default: demo
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/tabletap}
+    url: ${DB_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:tabletap}}
     username: ${DB_USERNAME:tabletap}
     password: ${DB_PASSWORD:tabletap}
     hikari:
